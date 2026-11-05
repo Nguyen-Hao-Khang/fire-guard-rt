@@ -4,17 +4,14 @@
 
 `main` is always buildable. Work happens on short-lived branches, merged through a pull request.
 
-Branch name: `<type>/<scope>-<short-description>`
+Branch name: `<owner>/<task>`
 
 | Part | Rule |
 |---|---|
-| `type` | Same set as commit types: `feat`, `fix`, `refactor`, `test`, `docs`, `build`, `ci`, `chore`, `perf` |
-| `scope` | Module or work item: `fusion`, `sensors`, `rfid`, `actuators`, `safety`, `comm`, `web`, `sim`, `rta`, `docs` |
-| `short-description` | 2 to 5 lowercase words, kebab-case, ASCII only |
+| `owner` | Handle of the member responsible for the task, e.g. `khangnh` |
+| `task` | Feature or task being implemented: 2 to 5 lowercase words, kebab-case, ASCII only |
 
-Examples: `feat/comm-coreiot-rpc`, `fix/rfid-card-debounce`, `test/fusion-degraded-mode`, `docs/srs-tcvn-timing`.
-
-Branches are not named after people. Ownership is tracked in the task board or pull request.
+Examples: `khangnh/coreiot-rpc`, `khangnh/rfid-card-debounce`, `khangnh/fusion-degraded-tests`.
 
 ## Commits
 
