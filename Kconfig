@@ -1,0 +1,77 @@
+# FireGuard-RT application configuration
+
+mainmenu "FireGuard-RT"
+
+menu "FireGuard-RT"
+
+config FG_SAMPLE_PERIOD_MS
+	int "Default sample period (ms)"
+	range 1000 2000
+	default 1000
+
+config FG_CALLIN_PERIOD_S
+	int "Default call-in period in NORMAL state (s)"
+	range 10 600
+	default 60
+
+config FG_WARMUP_S
+	int "MQ-2 warm-up time (s)"
+	default 60
+
+config FG_CONFIRM_WINDOW_MS
+	int "Multi-source confirmation window (ms)"
+	default 4000
+
+config FG_SENSOR_WDT_MS
+	int "Task watchdog timeout for sensor threads (ms)"
+	default 500
+
+config FG_CORE_WDT_MS
+	int "Task watchdog timeout for fusion/actuator threads (ms)"
+	default 1000
+
+config FG_FAULT_RESTART_MAX
+	int "Max restart attempts for a hung sensor thread"
+	default 3
+
+config FG_LDR_INVERT
+	bool "Invert LDR reading (higher voltage = darker)"
+	help
+	  Set when the LDR is on the high side of the divider.
+
+config FG_COMMANDER_UIDS
+	string "Commander card UIDs (comma separated hex, 4-byte)"
+	default "DEADBEEF,11223344"
+
+config FG_COMM
+	bool "Enable Wi-Fi + MQTT (CoreIoT) communication"
+	help
+	  Requires the hal_espressif blobs and a single-core (non-SMP) build.
+
+if FG_COMM
+
+config FG_WIFI_SSID
+	string "Wi-Fi SSID"
+	default "Wokwi-GUEST"
+
+config FG_WIFI_PSK
+	string "Wi-Fi password"
+	default ""
+
+config FG_COREIOT_HOST
+	string "CoreIoT MQTT host"
+	default "app.coreiot.io"
+
+config FG_COREIOT_PORT
+	int "CoreIoT MQTT port"
+	default 1883
+
+config FG_COREIOT_TOKEN
+	string "CoreIoT device access token"
+	default ""
+
+endif # FG_COMM
+
+endmenu
+
+source "Kconfig.zephyr"

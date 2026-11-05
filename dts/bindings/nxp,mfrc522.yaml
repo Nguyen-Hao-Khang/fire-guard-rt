@@ -1,0 +1,10 @@
+description: NXP MFRC522 13.56 MHz RFID reader (minimal FireGuard-RT driver)
+
+compatible: "nxp,mfrc522"
+
+include: spi-device.yaml
+
+properties:
+  reset-gpios:
+    type: phandle-array
+    description: NRSTPD pin (active low reset / power-down)

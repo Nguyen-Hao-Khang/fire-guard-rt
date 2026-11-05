@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "author": "FireGuard-RT",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-dht22", "id": "dht", "top": -144, "left": -144, "attrs": { "temperature": "28", "humidity": "60" } },
+    { "type": "wokwi-gas-sensor", "id": "mq2", "top": -230, "left": -10, "attrs": { "ppm": "200" } },
+    { "type": "wokwi-photoresistor-sensor", "id": "ldr", "top": -250, "left": 220, "attrs": { "lux": "200" } },
+    { "type": "wokwi-hc-sr04", "id": "sonar", "top": 260, "left": -230, "attrs": { "distance": "250" } },
+    { "type": "chip-rc522", "id": "rfid", "top": 280, "left": 230, "attrs": { "card": "0", "disconnected": "0" } },
+    { "type": "wokwi-relay-module", "id": "relay", "top": -40, "left": 260, "attrs": {} },
+    { "type": "wokwi-led", "id": "mains", "top": -120, "left": 420, "attrs": { "color": "white", "label": "MAINS LOAD" } },
+    { "type": "wokwi-resistor", "id": "r_mains", "top": -50, "left": 420, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-led", "id": "fan", "top": 60, "left": 420, "attrs": { "color": "blue", "label": "FAN" } },
+    { "type": "wokwi-resistor", "id": "r_fan", "top": 130, "left": 420, "rotate": 90, "attrs": { "value": "220" } },
+    { "type": "wokwi-buzzer", "id": "buzzer", "top": 170, "left": 330, "attrs": { "volume": "0.1" } },
+    { "type": "wokwi-rgb-led", "id": "rgb", "top": 180, "left": -150, "attrs": { "common": "cathode" } },
+    { "type": "wokwi-resistor", "id": "r_r", "top": 160, "left": -260, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r_g", "top": 180, "left": -260, "attrs": { "value": "220" } },
+    { "type": "wokwi-resistor", "id": "r_b", "top": 200, "left": -260, "attrs": { "value": "220" } }
+  ],
+  "connections": [
+    [ "esp:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX0", "$serialMonitor:TX", "", [] ],
+
+    [ "dht:VCC", "esp:3V3", "red", [] ],
+    [ "dht:GND", "esp:GND.1", "black", [] ],
+    [ "dht:SDA", "esp:D4", "green", [] ],
+
+    [ "mq2:VCC", "esp:3V3", "red", [] ],
+    [ "mq2:GND", "esp:GND.1", "black", [] ],
+    [ "mq2:AOUT", "esp:D34", "orange", [] ],
+
+    [ "ldr:VCC", "esp:3V3", "red", [] ],
+    [ "ldr:GND", "esp:GND.1", "black", [] ],
+    [ "ldr:AO", "esp:D35", "yellow", [] ],
+
+    [ "sonar:VCC", "esp:VIN", "red", [] ],
+    [ "sonar:GND", "esp:GND.2", "black", [] ],
+    [ "sonar:TRIG", "esp:D27", "violet", [] ],
+    [ "sonar:ECHO", "esp:D26", "gray", [] ],
+
+    [ "rfid:3V3", "esp:3V3", "red", [] ],
+    [ "rfid:GND", "esp:GND.2", "black", [] ],
+    [ "rfid:SDA", "esp:D5", "blue", [] ],
+    [ "rfid:SCK", "esp:D18", "white", [] ],
+    [ "rfid:MOSI", "esp:D23", "green", [] ],
+    [ "rfid:MISO", "esp:D19", "yellow", [] ],
+    [ "rfid:RST", "esp:D22", "orange", [] ],
+
+    [ "relay:VCC", "esp:VIN", "red", [] ],
+    [ "relay:GND", "esp:GND.2", "black", [] ],
+    [ "relay:IN", "esp:D13", "purple", [] ],
+    [ "relay:COM", "esp:3V3", "red", [] ],
+    [ "relay:NC", "r_mains:1", "red", [] ],
+    [ "r_mains:2", "mains:A", "red", [] ],
+    [ "mains:C", "esp:GND.2", "black", [] ],
+
+    [ "esp:D33", "r_fan:1", "blue", [] ],
+    [ "r_fan:2", "fan:A", "blue", [] ],
+    [ "fan:C", "esp:GND.2", "black", [] ],
+
+    [ "buzzer:1", "esp:GND.2", "black", [] ],
+    [ "buzzer:2", "esp:D25", "red", [] ],
+
+    [ "esp:RX2", "r_r:1", "red", [] ],
+    [ "esp:TX2", "r_g:1", "green", [] ],
+    [ "esp:D21", "r_b:1", "blue", [] ],
+    [ "r_r:2", "rgb:R", "red", [] ],
+    [ "r_g:2", "rgb:G", "green", [] ],
+    [ "r_b:2", "rgb:B", "blue", [] ],
+    [ "rgb:COM", "esp:GND.1", "black", [] ]
+  ],
+  "dependencies": {}
+}

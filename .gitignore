@@ -1,0 +1,6 @@
+build/
+build-*/
+twister-out*/
+secrets.conf
+*.pyc
+.cache/

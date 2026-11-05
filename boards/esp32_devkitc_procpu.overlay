@@ -1,0 +1,118 @@
+/*
+ * Devicetree overlay for ESP32 NodeMCU (30 pin) / esp32_devkitc
+ *
+ *  GPIO34 ADC1_CH6  MQ-2 AO (through 5V->3.3V divider)
+ *  GPIO35 ADC1_CH7  LDR divider
+ *  GPIO4            DHT22 data
+ *  GPIO27 / GPIO26  HC-SR04 TRIG / ECHO (ECHO through divider)
+ *  GPIO18/19/23/5   RC522 SCK / MISO / MOSI / SDA(CS)   GPIO22 RC522 RST
+ *  GPIO13           Relay IN
+ *  GPIO33           Fan (MOSFET gate)
+ *  GPIO25           Buzzer
+ *  GPIO16/17/21     LED RGB R / G / B
+ */
+#include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	zephyr,user {
+		io-channels = <&adc0 6>, <&adc0 7>;
+		io-channel-names = "gas", "light";
+	};
+
+	dht22: dht22 {
+		compatible = "aosong,dht";
+		status = "okay";
+		dio-gpios = <&gpio0 4 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+		dht22;
+	};
+
+	ultrasonic: hc_sr04 {
+		compatible = "hc-sr04";
+		status = "okay";
+		trigger-gpios = <&gpio0 27 GPIO_ACTIVE_HIGH>;
+		echo-gpios = <&gpio0 26 GPIO_ACTIVE_HIGH>;
+	};
+
+	fg_outputs {
+		compatible = "gpio-leds";
+		/* Real relay modules are often active-low: change flag if needed */
+		relay: relay { gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>; label = "Relay mains"; };
+		fan: fan { gpios = <&gpio1 1 GPIO_ACTIVE_HIGH>; label = "Exhaust fan"; };
+		buzzer: buzzer { gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>; label = "Buzzer"; };
+		led_r: led_r { gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>; label = "LED R"; };
+		led_g: led_g { gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>; label = "LED G"; };
+		led_b: led_b { gpios = <&gpio0 21 GPIO_ACTIVE_HIGH>; label = "LED B"; };
+	};
+
+	aliases {
+		fg-relay = &relay;
+		fg-fan = &fan;
+		fg-buzzer = &buzzer;
+		fg-led-r = &led_r;
+		fg-led-g = &led_g;
+		fg-led-b = &led_b;
+		fg-dht = &dht22;
+		fg-ultrasonic = &ultrasonic;
+		fg-rfid = &rfid;
+	};
+};
+
+&adc0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@6 {
+		reg = <6>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+
+	channel@7 {
+		reg = <7>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
+};
+
+/* GPIO21/22 are used by RGB-B and RC522-RST */
+&i2c0 {
+	status = "disabled";
+};
+
+/* HSPI default pins overlap GPIO13 (relay) */
+&spi2 {
+	status = "disabled";
+};
+
+/* VSPI without hardware CS: GPIO5 is driven as a GPIO chip-select */
+&pinctrl {
+	spim3_fg: spim3_fg {
+		group1 {
+			pinmux = <SPIM3_MISO_GPIO19>,
+				 <SPIM3_SCLK_GPIO18>;
+		};
+		group2 {
+			pinmux = <SPIM3_MOSI_GPIO23>;
+			output-low;
+		};
+	};
+};
+
+&spi3 {
+	pinctrl-0 = <&spim3_fg>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpio0 5 GPIO_ACTIVE_LOW>;
+
+	rfid: rc522@0 {
+		compatible = "nxp,mfrc522";
+		reg = <0>;
+		spi-max-frequency = <4000000>;
+		reset-gpios = <&gpio0 22 GPIO_ACTIVE_LOW>;
+	};
+};

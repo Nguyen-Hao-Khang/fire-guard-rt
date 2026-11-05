@@ -1,0 +1,11 @@
+# Wokwi for VS Code - FireGuard-RT
+# Build first (from this folder):
+#   west build -b esp32_devkitc/esp32/procpu -- "-DEXTRA_CONF_FILE=sim.conf"
+[wokwi]
+version = 1
+firmware = "build/wokwi_flash.bin"
+elf = "build/zephyr/zephyr.elf"
+
+[[chip]]
+name = "rc522"
+binary = "wokwi/chips/rc522.chip.wasm"

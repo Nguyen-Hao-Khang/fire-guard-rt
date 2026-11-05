@@ -1,0 +1,23 @@
+{
+  "name": "RC522",
+  "author": "FireGuard-RT",
+  "pins": ["SDA", "SCK", "MOSI", "MISO", "IRQ", "GND", "RST", "3V3"],
+  "controls": [
+    {
+      "id": "card",
+      "label": "Card: 0 none, 1 commander DEADBEEF, 2 unknown 12345678",
+      "type": "range",
+      "min": 0,
+      "max": 2,
+      "step": 1
+    },
+    {
+      "id": "disconnected",
+      "label": "Reader fault (1 = not responding)",
+      "type": "range",
+      "min": 0,
+      "max": 1,
+      "step": 1
+    }
+  ]
+}
