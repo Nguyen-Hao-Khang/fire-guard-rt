@@ -7,6 +7,7 @@
 #include <zephyr/shell/shell.h>
 #include "app/channels.h"
 #include "app/config.h"
+#include "app/diag.h"
 #include "app/threads.h"
 #include "actuators/actuators.h"
 #include "fusion/fusion.h"
@@ -139,6 +140,12 @@ static int cmd_latency(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
+static int __maybe_unused cmd_threads(const struct shell *sh, size_t argc, char **argv)
+{
+	fg_diag_report();
+	return 0;
+}
+
 static int cmd_log(const struct shell *sh, size_t argc, char **argv)
 {
 	struct fg_event e;
@@ -161,6 +168,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(
 	SHELL_CMD_ARG(drill, NULL, "drill [seconds|stop]", cmd_drill, 1, 1),
 	SHELL_CMD_ARG(latency, NULL, "latency [reset]", cmd_latency, 1, 1),
 	SHELL_CMD(log, NULL, "Dump event log", cmd_log),
+	SHELL_COND_CMD(CONFIG_FG_DIAG_STATS, threads, NULL, "Thread CPU usage and data flow",
+		       cmd_threads),
 	SHELL_SUBCMD_SET_END);
 
 SHELL_CMD_REGISTER(fg, &fg_cmds, "FireGuard-RT commands", NULL);

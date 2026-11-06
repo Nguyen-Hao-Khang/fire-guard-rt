@@ -43,6 +43,17 @@ config FG_COMMANDER_UIDS
 	string "Commander card UIDs (comma separated hex, 4-byte)"
 	default "DEADBEEF,11223344"
 
+config FG_DIAG_STATS
+	bool "Thread usage and data flow diagnostics"
+	select THREAD_RUNTIME_STATS
+	select SCHED_THREAD_USAGE
+	select THREAD_MONITOR
+
+config FG_DIAG_PERIOD_MS
+	int "Periodic diagnostics report period (ms), 0 = on demand only"
+	depends on FG_DIAG_STATS
+	default 0
+
 config FG_COMM
 	bool "Enable Wi-Fi + MQTT (CoreIoT) communication"
 	help

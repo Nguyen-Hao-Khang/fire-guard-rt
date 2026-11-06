@@ -18,6 +18,7 @@
 #include <zephyr/sys/atomic.h>
 #include <zephyr/logging/log.h>
 #include "safety/fault_mgr.h"
+#include "app/diag.h"
 
 LOG_MODULE_REGISTER(fg_fault, LOG_LEVEL_INF);
 
@@ -188,6 +189,9 @@ void fg_fault_thread(void *p1, void *p2, void *p3)
 			if (th_state[i].retries && now - th_state[i].last_hang > STABLE_RESET_MS) {
 				th_state[i].retries = 0;
 			}
+		}
+		if (IS_ENABLED(CONFIG_FG_DIAG_STATS)) {
+			fg_diag_tick(now);
 		}
 		/* Also re-arms the HW watchdog after a task_wdt callback */
 		fg_wdt_feed(FG_TH_FAULT);

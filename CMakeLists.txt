@@ -24,6 +24,10 @@ target_sources(app PRIVATE
   src/safety/event_log.c
 )
 
+target_sources_ifdef(CONFIG_FG_DIAG_STATS app PRIVATE
+  src/app/diag.c
+)
+
 target_sources_ifdef(CONFIG_FG_COMM app PRIVATE
   src/comm/coreiot.c
 )
