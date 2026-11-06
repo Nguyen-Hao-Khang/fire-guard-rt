@@ -20,11 +20,12 @@
 6. [Chạy mô phỏng Wokwi](#6-chạy-mô-phỏng-wokwi)
 7. [Nạp và chạy trên phần cứng](#7-nạp-và-chạy-trên-phần-cứng)
 8. [Kết nối CoreIoT](#8-kết-nối-coreiot)
-9. [Shell chẩn đoán](#9-shell-chẩn-đoán)
-10. [Kiến trúc phần mềm](#10-kiến-trúc-phần-mềm)
-11. [Kiểm thử](#11-kiểm-thử)
-12. [Xử lý sự cố](#12-xử-lý-sự-cố)
-13. [Tài liệu liên quan](#13-tài-liệu-liên-quan)
+9. [Giao diện giám sát web](#9-giao-diện-giám-sát-web)
+10. [Shell chẩn đoán](#10-shell-chẩn-đoán)
+11. [Kiến trúc phần mềm](#11-kiến-trúc-phần-mềm)
+12. [Kiểm thử](#12-kiểm-thử)
+13. [Xử lý sự cố](#13-xử-lý-sự-cố)
+14. [Tài liệu liên quan](#14-tài-liệu-liên-quan)
 
 ## 1. Tổng quan
 
@@ -81,6 +82,7 @@ fire_guard_rt/
 │   ├── actuators/                 Relay, quạt, còi, LED RGB, đo độ trễ phản ứng
 │   ├── safety/                    Task Watchdog, fault manager, nhật ký sự kiện, đo và phân tích thời gian thực
 │   └── comm/                      Wi-Fi + MQTT CoreIoT
+├── web/                           Giao diện giám sát (HTML, CSS, JavaScript tĩnh)
 ├── tests/                         Unit test trên native_sim (fusion, storage)
 └── docs/                          SRS, đấu nối
 ```
@@ -238,7 +240,32 @@ Trước khi cấp nguồn, kiểm tra cầu phân áp cho MQ-2 và ECHO của H
 
 Telemetry gửi mỗi `callin_period_s` khi bình thường và mỗi `sample_period_ms` khi có bất thường; sự kiện được gửi ngay. Không có lệnh từ xa nào tắt được báo động.
 
-## 9. Shell chẩn đoán
+## 9. Giao diện giám sát web
+
+Thư mục `web/` chứa một trang web tĩnh, không cần build hay máy chủ riêng. Trang gọi trực tiếp REST API và WebSocket của CoreIoT nên dùng chung tài khoản và device đã cấu hình ở mục 8.
+
+| Trang | Nội dung |
+|---|---|
+| Overview | Trạng thái hệ thống, nguyên nhân và thời điểm chuyển trạng thái, số đo bốn cảm biến so với ngưỡng, đáp ứng của cơ cấu chấp hành suy ra từ trạng thái, sức khỏe cảm biến, người trong vùng nguy hiểm, sự kiện gần nhất. Cập nhật thời gian thực qua WebSocket. |
+| History | Biểu đồ khí gas, ánh sáng, nhiệt độ, độ ẩm trong 1 giờ, 24 giờ hoặc 7 ngày (trung bình theo khoảng); nhật ký sự kiện có bộ lọc theo loại. |
+| Settings | Sửa chín shared attribute với kiểm tra miền giá trị giống firmware, hiển thị kết quả `cfg_<khóa>` do thiết bị báo về và phiên bản firmware; bắt đầu hoặc dừng diễn tập qua RPC. |
+
+Cách dùng:
+
+1. Mở `web/index.html` bằng trình duyệt, hoặc phục vụ thư mục bằng một máy chủ tĩnh bất kỳ:
+
+   ```
+   python -m http.server 8080 --directory web
+   ```
+
+2. Đăng nhập theo một trong hai cách. Địa chỉ máy chủ mặc định là `https://app.coreiot.io` và có thể đổi cho máy chủ ThingsBoard khác.
+   - **Password**: email và mật khẩu CoreIoT.
+   - **Access token**: dành cho tài khoản đăng nhập bằng Google hoặc GitHub. Trên CoreIoT, mở *Account* > *Security*, bấm **Copy JWT token** rồi dán vào trang. Token có hiệu lực khoảng 2,5 giờ; muốn tự gia hạn, dán thêm giá trị `refresh_token` trong Local storage của tab CoreIoT.
+3. Chọn device ở góc trên bên phải. Lựa chọn device và giao diện sáng/tối được ghi nhớ trên trình duyệt.
+
+Phiên đăng nhập (JWT và refresh token) chỉ lưu trong `sessionStorage` của tab và bị xóa khi đóng tab hoặc đăng xuất. Lệnh RPC chỉ thành công khi thiết bị đang kết nối; nếu thiết bị offline, trang báo lỗi thay vì chờ. Trang cần Internet để tải phông chữ và Chart.js từ CDN.
+
+## 10. Shell chẩn đoán
 
 Shell chạy trên UART0, 115200 baud.
 
@@ -260,7 +287,7 @@ Shell chạy trên UART0, 115200 baud.
 | `fg bench <n>` | Đo tự động độ trễ phát hiện và phản ứng qua n chu kỳ báo động |
 | `kernel thread list` | Stack và ưu tiên mọi thread của kernel |
 
-## 10. Kiến trúc phần mềm
+## 11. Kiến trúc phần mềm
 
 Các luồng trao đổi dữ liệu qua kênh **zbus**. Thread nhận được gắn với kênh (`zbus_obs_attach_to_thread`) để thread phát tạm thời được nâng ưu tiên khi thông báo.
 
@@ -318,7 +345,7 @@ python scripts/trace2perfetto.py capture.log trace.json
 
 Mở `trace.json` tại [ui.perfetto.dev](https://ui.perfetto.dev). Số liệu chính thức nên lấy trên phần cứng; Wokwi không mô phỏng chính xác thời gian thực thi.
 
-## 11. Kiểm thử
+## 12. Kiểm thử
 
 **CI**: workflow `.github/workflows/build.yml` chạy trên mỗi pull request và mỗi lần push lên `main`. Workflow dựng workspace từ `west.yml`, build ba cấu hình (mô phỏng, phần cứng, phần cứng + CoreIoT), chạy toàn bộ unit test bằng Twister và đính kèm file firmware.
 
@@ -328,7 +355,7 @@ Mở `trace.json` tại [ui.perfetto.dev](https://ui.perfetto.dev). Số liệu 
 west twister -T tests -p native_sim/native/64
 ```
 
-## 12. Xử lý sự cố
+## 13. Xử lý sự cố
 
 | Triệu chứng | Nguyên nhân và cách xử lý |
 |---|---|
@@ -340,7 +367,7 @@ west twister -T tests -p native_sim/native/64
 | `sensor dht22 IMPLAUSIBLE FAULT` | Kiểm tra đấu nối DHT22 và điện trở kéo lên; chân dữ liệu khai báo `GPIO_ACTIVE_LOW`. |
 | `Wi-Fi: no IP yet` trên Wokwi | Kiểm tra mô phỏng có kết nối Internet (Wokwi IoT Gateway). |
 
-## 13. Tài liệu liên quan
+## 14. Tài liệu liên quan
 
 | Tài liệu | Nội dung |
 |---|---|
