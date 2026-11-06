@@ -1,0 +1,22 @@
+# Application options used by the modules under test
+config FG_SAMPLE_PERIOD_MS
+	int
+	default 1000
+
+config FG_CALLIN_PERIOD_S
+	int
+	default 60
+
+config FG_CONFIRM_WINDOW_MS
+	int
+	default 4000
+
+config FG_PERSIST
+	bool
+	default y
+	select FLASH
+	select FLASH_MAP
+	select NVS
+	select SETTINGS
+
+source "Kconfig.zephyr"

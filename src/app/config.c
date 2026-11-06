@@ -1,13 +1,15 @@
 /*
  * Runtime configuration
  *
- * TODO(persist): store accepted values in NVS through the settings subsystem.
+ * Accepted changes are published on chan_config and saved to storage, so
+ * remote or shell settings survive a reset.
  */
 #include <errno.h>
 #include <string.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include "app/config.h"
+#include "app/storage.h"
 
 LOG_MODULE_REGISTER(fg_config, LOG_LEVEL_INF);
 
@@ -59,6 +61,13 @@ int fg_config_set(const char *key, int32_t value)
 			return -EINVAL;
 		}
 		fg_config_get(&c);
+		uint8_t *field = (uint8_t *)&c + fields[i].offset;
+		int32_t old = fields[i].is_u16 ? *(uint16_t *)field : *(int16_t *)field;
+
+		if (old == value) {
+			LOG_INF("config %s=%d (unchanged)", key, value);
+			return 0;
+		}
 		if (fields[i].is_u16) {
 			*(uint16_t *)((uint8_t *)&c + fields[i].offset) = (uint16_t)value;
 		} else {
@@ -72,7 +81,30 @@ int fg_config_set(const char *key, int32_t value)
 			return -EINVAL;
 		}
 		LOG_INF("config %s=%d", key, value);
+		err = fg_storage_save("cfg", &c, sizeof(c));
+		if (err) {
+			LOG_WRN("config not saved (%d)", err);
+		}
 		return 0;
 	}
 	return -ENOENT;
+}
+
+void fg_config_restore(const struct fg_config *c)
+{
+	if (zbus_chan_pub(&chan_config, c, K_MSEC(100)) != 0) {
+		LOG_WRN("stored configuration rejected, using defaults");
+	}
+}
+
+int fg_config_reset(void)
+{
+	const struct fg_config defaults = FG_CONFIG_DEFAULTS;
+	int err = zbus_chan_pub(&chan_config, &defaults, K_MSEC(100));
+
+	if (err == 0) {
+		fg_storage_delete("cfg");
+		LOG_INF("config reset to defaults");
+	}
+	return err;
 }

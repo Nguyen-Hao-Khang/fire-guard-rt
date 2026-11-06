@@ -43,6 +43,16 @@ config FG_COMMANDER_UIDS
 	string "Commander card UIDs (comma separated hex, 4-byte)"
 	default "DEADBEEF,11223344"
 
+config FG_PERSIST
+	bool "Keep configuration and event log in flash"
+	default y
+	select FLASH
+	select FLASH_MAP
+	select NVS
+	select SETTINGS
+	help
+	  Uses the settings subsystem on NVS in the storage partition.
+
 config FG_DIAG_STATS
 	bool "Thread usage and data flow diagnostics"
 	select THREAD_RUNTIME_STATS

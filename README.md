@@ -70,14 +70,14 @@ fire_guard_rt/
 ├── wokwi/chips/                   Custom chip RC522 cho Wokwi
 ├── src/
 │   ├── main.c                     Khởi tạo, khởi chạy bảng thread
-│   ├── app/                       Kênh zbus, cấu hình, bảng thread, shell, chẩn đoán
+│   ├── app/                       Kênh zbus, cấu hình, lưu trữ, bảng thread, shell, chẩn đoán
 │   ├── fusion/                    Tổng hợp cảm biến và máy trạng thái
 │   ├── sensors/                   LDR, MQ-2, DHT22, HC-SR04, RFID
 │   ├── drivers/                   Driver MFRC522 qua SPI
 │   ├── actuators/                 Relay, quạt, còi, LED RGB, đo độ trễ phản ứng
 │   ├── safety/                    Task Watchdog, fault manager, nhật ký sự kiện
 │   └── comm/                      Wi-Fi + MQTT CoreIoT
-├── tests/fusion/                  Unit test máy trạng thái (native_sim)
+├── tests/                         Unit test trên native_sim (fusion, storage)
 └── docs/                          SRS, đấu nối
 ```
 
@@ -231,13 +231,13 @@ Shell chạy trên UART0, 115200 baud.
 | Lệnh | Tác dụng |
 |---|---|
 | `fg status` | Trạng thái, giá trị cảm biến, cờ lỗi |
-| `fg config` | Cấu hình đang dùng |
+| `fg config [reset]` | Cấu hình đang dùng; `reset` khôi phục mặc định và xoá cấu hình đã lưu |
 | `fg set <khóa> <giá trị>` | Đổi cấu hình (có kiểm tra miền) |
 | `fg drill [giây\|stop]` | Diễn tập |
 | `fg card <uid8hex>` | Giả lập quẹt thẻ |
 | `fg hang <adc\|dht\|ultra\|rfid\|fusion\|act>` | Tiêm lỗi treo luồng để kiểm thử Task Watchdog |
 | `fg latency [reset]` | Thống kê độ trễ phản ứng |
-| `fg log` | Nhật ký sự kiện |
+| `fg log` | Nhật ký sự kiện (kèm số lần khởi động `boot`) |
 | `fg threads` | CPU, ưu tiên, trạng thái từng thread (khi bật `CONFIG_FG_DIAG_STATS`) |
 | `kernel thread list` | Stack và ưu tiên mọi thread của kernel |
 
@@ -270,11 +270,13 @@ Các luồng trao đổi dữ liệu qua kênh **zbus**. Thread nhận được 
 
 Số ưu tiên nhỏ hơn là ưu tiên cao hơn. Thread của driver Wi-Fi được giới hạn ở `CONFIG_ESP32_WIFI_MAX_THREAD_PRIORITY=12`, dưới mọi thread an toàn.
 
+**Lưu trữ không bay hơi** (`CONFIG_FG_PERSIST`, mặc định bật): cấu hình được chấp nhận và nhật ký 64 sự kiện gần nhất được lưu bằng settings/NVS trên phân vùng `storage_partition`. Sau khi khởi động lại, cấu hình được khôi phục, nhật ký giữ lịch sử của các lần khởi động trước, và các sự kiện chưa gửi được gửi lại lên CoreIoT. Việc ghi flash chỉ diễn ra trong thread `fg_log` (ưu tiên 9) vì thao tác này tạm dừng cache của cả hai nhân.
+
 Máy trạng thái: `INIT → WARMUP → NORMAL ⇄ PRE_ALARM → ALARM_FIRE / ALARM_GAS`, thêm `DRILL` cho diễn tập. Chi tiết luật tổng hợp và hành vi cơ cấu chấp hành theo trạng thái: [`docs/SRS.md`](docs/SRS.md).
 
 ## 11. Kiểm thử
 
-**Unit test** máy trạng thái chạy trên `native_sim` (Linux hoặc WSL):
+**Unit test** chạy trên `native_sim` (Linux hoặc WSL): `tests/fusion` cho máy trạng thái, `tests/storage` cho lưu trữ cấu hình và nhật ký qua khởi động lại.
 
 ```sh
 west twister -T tests -p native_sim/native/64

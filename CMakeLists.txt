@@ -24,6 +24,10 @@ target_sources(app PRIVATE
   src/safety/event_log.c
 )
 
+target_sources_ifdef(CONFIG_FG_PERSIST app PRIVATE
+  src/app/storage.c
+)
+
 target_sources_ifdef(CONFIG_FG_DIAG_STATS app PRIVATE
   src/app/diag.c
 )

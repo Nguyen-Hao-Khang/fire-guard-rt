@@ -15,6 +15,10 @@
 #include <zephyr/dt-bindings/gpio/gpio.h>
 
 / {
+	chosen {
+		zephyr,settings-partition = &storage_partition;
+	};
+
 	zephyr,user {
 		io-channels = <&adc0 6>, <&adc0 7>;
 		io-channel-names = "gas", "light";

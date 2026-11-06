@@ -328,8 +328,8 @@ static void flush_events(void)
 		}
 		snprintf(msg, sizeof(msg),
 			 "{\"event\":\"%s\",\"detail\":\"%s\",\"a\":%u,\"b\":%u,\"seq\":%u,"
-			 "\"uptime_ms\":%u}",
-			 fg_event_type_name(e.type), detail, e.a, e.b, e.seq, e.ts_ms);
+			 "\"boot\":%u,\"uptime_ms\":%u}",
+			 fg_event_type_name(e.type), detail, e.a, e.b, e.seq, e.boot, e.ts_ms);
 		if (publish(TOPIC_TELEMETRY, msg, MQTT_QOS_1_AT_LEAST_ONCE) != 0) {
 			break;
 		}
