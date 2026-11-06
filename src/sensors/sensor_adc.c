@@ -6,11 +6,13 @@
  * an implausible-data fault (broken wire / short).
  */
 #include <zephyr/kernel.h>
+#include <zephyr/sys/atomic.h>
 #include <zephyr/drivers/adc.h>
 #include <zephyr/logging/log.h>
 #include "app/channels.h"
 #include "app/config.h"
 #include "safety/fault_mgr.h"
+#include "sensors/sensors.h"
 
 LOG_MODULE_REGISTER(fg_adc, LOG_LEVEL_INF);
 
@@ -44,6 +46,13 @@ static int read_mv(const struct adc_dt_spec *spec, int32_t *mv, int32_t *raw_avg
 	*raw_avg = acc / OVERSAMPLE;
 	*mv = *raw_avg;
 	return adc_raw_to_millivolts_dt(spec, mv);
+}
+
+static atomic_t gas_override = ATOMIC_INIT(-1);
+
+void fg_adc_override_gas(int32_t mv)
+{
+	atomic_set(&gas_override, mv);
 }
 
 static bool at_rail(int32_t raw)
@@ -94,6 +103,13 @@ void fg_adc_thread(void *p1, void *p2, void *p3)
 				gas_rail_since = 0;
 			}
 			fg_fault_report(FG_SENSOR_GAS, FG_FAULT_IMPLAUSIBLE, !msg.gas_ok);
+
+			int32_t forced = (int32_t)atomic_get(&gas_override);
+
+			if (forced >= 0) {
+				msg.gas_mv = forced;
+				msg.gas_ok = true;
+			}
 			fg_fault_report(FG_SENSOR_LIGHT, FG_FAULT_IMPLAUSIBLE, !msg.light_ok);
 		}
 

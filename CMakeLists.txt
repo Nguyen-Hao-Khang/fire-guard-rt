@@ -28,6 +28,18 @@ target_sources_ifdef(CONFIG_FG_PERSIST app PRIVATE
   src/app/storage.c
 )
 
+target_sources_ifdef(CONFIG_FG_RT_STATS app PRIVATE
+  src/safety/rt_stats.c
+)
+
+target_sources_ifdef(CONFIG_FG_TRACE app PRIVATE
+  src/safety/rt_trace.c
+)
+
+target_sources_ifdef(CONFIG_FG_BENCH app PRIVATE
+  src/app/bench.c
+)
+
 target_sources_ifdef(CONFIG_FG_DIAG_STATS app PRIVATE
   src/app/diag.c
 )

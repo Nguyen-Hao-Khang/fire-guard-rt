@@ -22,9 +22,11 @@
 #include <zephyr/net/socket.h>
 #include <zephyr/net/mqtt.h>
 #include <zephyr/random/random.h>
+#include <zephyr/sys/atomic.h>
 #include "app/channels.h"
 #include "app/config.h"
 #include "safety/event_log.h"
+#include "sensors/sensors.h"
 
 LOG_MODULE_REGISTER(fg_comm, LOG_LEVEL_INF);
 
@@ -50,6 +52,12 @@ static uint8_t tx_buf[BUF_SIZE];
 static uint8_t payload[BUF_SIZE];
 static char client_id[24];
 static bool connected;
+static atomic_t load_hz;   /* extra publications per second (load tests) */
+
+void fg_comm_set_load(uint32_t hz)
+{
+	atomic_set(&load_hz, hz);
+}
 
 /* Minimal JSON helpers */
 
@@ -383,6 +391,8 @@ void fg_comm_thread(void *p1, void *p2, void *p3)
 		backoff_ms = 2000;
 
 		uint32_t next_report = 0;
+		uint32_t next_load = 0;
+		uint32_t load_seq = 0;
 
 		while (connected) {
 			const struct zbus_channel *chan;
@@ -401,7 +411,21 @@ void fg_comm_thread(void *p1, void *p2, void *p3)
 				next_report = now;
 			}
 
-			if (zsock_poll(&fd, 1, 100) > 0 && mqtt_input(&client) < 0) {
+			uint32_t hz = (uint32_t)atomic_get(&load_hz);
+			int poll_ms = 100;
+
+			if (hz > 0) {
+				if ((int32_t)(now - next_load) >= 0) {
+					char msg[32];
+
+					snprintf(msg, sizeof(msg), "{\"load_seq\":%u}", load_seq++);
+					publish(TOPIC_TELEMETRY, msg, MQTT_QOS_0_AT_MOST_ONCE);
+					next_load = now + 1000U / hz;
+				}
+				poll_ms = MIN(poll_ms, (int)(1000U / hz));
+			}
+
+			if (zsock_poll(&fd, 1, poll_ms) > 0 && mqtt_input(&client) < 0) {
 				break;
 			}
 			mqtt_live(&client);

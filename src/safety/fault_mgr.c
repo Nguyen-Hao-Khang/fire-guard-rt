@@ -19,6 +19,7 @@
 #include <zephyr/logging/log.h>
 #include "safety/fault_mgr.h"
 #include "app/diag.h"
+#include "safety/rt_stats.h"
 
 LOG_MODULE_REGISTER(fg_fault, LOG_LEVEL_INF);
 
@@ -98,10 +99,15 @@ void fg_sleep_feed(enum fg_thread_id th, uint32_t ms)
 {
 	while (ms > 0) {
 		uint32_t slice = MIN(ms, 250U);
+		uint32_t release;
 
 		fg_wdt_feed(th);
 		fg_hang_point(th);
+		/* each wake-up is a job released at the requested wake time */
+		fg_rt_end(th);
+		release = k_cycle_get_32() + (uint32_t)k_ms_to_cyc_ceil32(slice);
 		k_msleep(slice);
+		fg_rt_begin(th, release);
 		ms -= slice;
 	}
 	fg_wdt_feed(th);
@@ -176,7 +182,11 @@ void fg_fault_thread(void *p1, void *p2, void *p3)
 		uint8_t th;
 		uint32_t now;
 
-		if (k_msgq_get(&hang_q, &th, K_MSEC(250)) == 0 && th < FG_TH_COUNT) {
+		fg_rt_end(FG_TH_FAULT);
+		int got = k_msgq_get(&hang_q, &th, K_MSEC(250));
+
+		fg_rt_begin(FG_TH_FAULT, 0);
+		if (got == 0 && th < FG_TH_COUNT) {
 			handle_hang(th, fg_now_ms());
 		}
 		now = fg_now_ms();

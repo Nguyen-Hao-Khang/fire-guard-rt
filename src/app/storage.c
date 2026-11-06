@@ -11,6 +11,7 @@
 #include "app/config.h"
 #include "app/storage.h"
 #include "safety/event_log.h"
+#include "safety/rt_stats.h"
 
 LOG_MODULE_REGISTER(fg_storage, LOG_LEVEL_INF);
 
@@ -72,7 +73,13 @@ int fg_storage_save(const char *key, const void *data, size_t len)
 	char path[24];
 
 	snprintf(path, sizeof(path), ROOT "/%s", key);
-	return settings_save_one(path, data, len);
+
+	uint32_t t0 = k_cycle_get_32();
+	int err = settings_save_one(path, data, len);
+
+	/* flash writes stall the cache of both cores: blocking term for RTA */
+	fg_rt_blocking(k_cycle_get_32() - t0);
+	return err;
 }
 
 int fg_storage_delete(const char *key)

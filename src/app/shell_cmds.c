@@ -173,19 +173,18 @@ static int cmd_log(const struct shell *sh, size_t argc, char **argv)
 	return 0;
 }
 
-SHELL_STATIC_SUBCMD_SET_CREATE(
-	fg_cmds,
-	SHELL_CMD(status, NULL, "System state, sensors, faults", cmd_status),
-	SHELL_CMD_ARG(config, NULL, "config [reset] (show or restore defaults)", cmd_config, 1, 1),
-	SHELL_CMD_ARG(set, NULL, "set <key> <value>", cmd_set, 3, 0),
-	SHELL_CMD_ARG(hang, NULL, "hang <adc|dht|ultra|rfid|fusion|act> (fault injection)",
-		      cmd_hang, 2, 0),
-	SHELL_CMD_ARG(card, NULL, "card <uid hex8> (simulate RFID card)", cmd_card, 2, 0),
-	SHELL_CMD_ARG(drill, NULL, "drill [seconds|stop]", cmd_drill, 1, 1),
-	SHELL_CMD_ARG(latency, NULL, "latency [reset]", cmd_latency, 1, 1),
-	SHELL_CMD(log, NULL, "Dump event log", cmd_log),
-	SHELL_COND_CMD(CONFIG_FG_DIAG_STATS, threads, NULL, "Thread CPU usage and data flow",
-		       cmd_threads),
-	SHELL_SUBCMD_SET_END);
-
+SHELL_SUBCMD_SET_CREATE(fg_cmds, (fg));
 SHELL_CMD_REGISTER(fg, &fg_cmds, "FireGuard-RT commands", NULL);
+
+SHELL_SUBCMD_ADD((fg), status, NULL, "System state, sensors, faults", cmd_status, 1, 0);
+SHELL_SUBCMD_ADD((fg), config, NULL, "config [reset] (show or restore defaults)", cmd_config, 1,
+		 1);
+SHELL_SUBCMD_ADD((fg), set, NULL, "set <key> <value>", cmd_set, 3, 0);
+SHELL_SUBCMD_ADD((fg), hang, NULL, "hang <adc|dht|ultra|rfid|fusion|act> (fault injection)",
+		 cmd_hang, 2, 0);
+SHELL_SUBCMD_ADD((fg), card, NULL, "card <uid hex8> (simulate RFID card)", cmd_card, 2, 0);
+SHELL_SUBCMD_ADD((fg), drill, NULL, "drill [seconds|stop]", cmd_drill, 1, 1);
+SHELL_SUBCMD_ADD((fg), latency, NULL, "latency [reset]", cmd_latency, 1, 1);
+SHELL_SUBCMD_ADD((fg), log, NULL, "Dump event log", cmd_log, 1, 0);
+SHELL_SUBCMD_COND_ADD(IS_ENABLED(CONFIG_FG_DIAG_STATS), (fg), threads, NULL,
+		      "Thread CPU usage and data flow", cmd_threads, 1, 0);

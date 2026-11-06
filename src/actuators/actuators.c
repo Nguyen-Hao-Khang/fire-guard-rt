@@ -15,6 +15,7 @@
 #include "app/config.h"
 #include "actuators/actuators.h"
 #include "safety/fault_mgr.h"
+#include "safety/rt_stats.h"
 
 LOG_MODULE_REGISTER(fg_act, LOG_LEVEL_INF);
 
@@ -252,14 +253,20 @@ void fg_act_thread(void *p1, void *p2, void *p3)
 	while (1) {
 		bool entered_alarm = false;
 
+		fg_rt_end(FG_TH_ACT);
 		fg_wdt_feed(FG_TH_ACT);
 		fg_hang_point(FG_TH_ACT);
-		if (zbus_sub_wait(&act_sub, &chan, K_MSEC(TICK_MS)) == 0) {
+		int woke = zbus_sub_wait(&act_sub, &chan, K_MSEC(TICK_MS));
+
+		fg_rt_begin(FG_TH_ACT, 0);
+		if (woke == 0) {
 			uint8_t prev = st.state;
 
 			if (zbus_chan_read(&chan_state, &st, FG_CHAN_READ_TIMEOUT) != 0) {
 				continue;
 			}
+			/* a state change is released when fusion published it */
+			fg_rt_set_release(FG_TH_ACT, st.decision_cyc);
 			apply_power(&st);
 			entered_alarm = fg_state_is_alarm(st.state) && !fg_state_is_alarm(prev);
 		}

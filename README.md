@@ -64,20 +64,22 @@ fire_guard_rt/
 ├── .github/workflows/             CI: build và unit test
 ├── prj.conf                       Cấu hình Zephyr chung
 ├── sim.conf                       Fragment cho mô phỏng Wokwi
+├── rt.conf                        Fragment cho đo thời gian thực trên phần cứng
 ├── comm.conf                      Fragment Wi-Fi + MQTT
 ├── secrets.conf.example           Mẫu thông tin đăng nhập (secrets.conf không được commit)
 ├── boards/                        Devicetree overlay
 ├── dts/bindings/                  Binding cho RC522
 ├── diagram.json, wokwi.toml       Mạch và cấu hình mô phỏng
 ├── wokwi/chips/                   Custom chip RC522 cho Wokwi
+├── scripts/                       Chuyển dữ liệu tracing sang Perfetto
 ├── src/
 │   ├── main.c                     Khởi tạo, khởi chạy bảng thread
-│   ├── app/                       Kênh zbus, cấu hình, lưu trữ, bảng thread, shell, chẩn đoán
+│   ├── app/                       Kênh zbus, cấu hình, lưu trữ, bảng thread, shell, chẩn đoán, benchmark
 │   ├── fusion/                    Tổng hợp cảm biến và máy trạng thái
 │   ├── sensors/                   LDR, MQ-2, DHT22, HC-SR04, RFID
 │   ├── drivers/                   Driver MFRC522 qua SPI
 │   ├── actuators/                 Relay, quạt, còi, LED RGB, đo độ trễ phản ứng
-│   ├── safety/                    Task Watchdog, fault manager, nhật ký sự kiện
+│   ├── safety/                    Task Watchdog, fault manager, nhật ký sự kiện, đo và phân tích thời gian thực
 │   └── comm/                      Wi-Fi + MQTT CoreIoT
 ├── tests/                         Unit test trên native_sim (fusion, storage)
 └── docs/                          SRS, đấu nối
@@ -146,6 +148,7 @@ Chạy từ thư mục `<workspace>/applications/fire_guard_rt`.
 | Mô phỏng Wokwi + CoreIoT | `west build -p -b esp32_devkitc/esp32/procpu -- "-DEXTRA_CONF_FILE=sim.conf;comm.conf;secrets.conf"` |
 | Phần cứng, không kết nối mạng | `west build -p -b esp32_devkitc/esp32/procpu` |
 | Phần cứng + CoreIoT | `west build -p -b esp32_devkitc/esp32/procpu -- "-DEXTRA_CONF_FILE=comm.conf;secrets.conf"` |
+| Phần cứng, đo thời gian thực | `west build -p -b esp32_devkitc/esp32/procpu -- "-DEXTRA_CONF_FILE=rt.conf"` (thêm `;comm.conf;secrets.conf` để đo khi có tải mạng) |
 
 Trên PowerShell, tham số `-D...` phải đặt trong dấu ngoặc kép. Nếu không, PowerShell tách `sim.conf` thành `sim` và `.conf`, và dấu `;` kết thúc câu lệnh.
 
@@ -153,7 +156,8 @@ Build thành công sinh ra `build/zephyr/zephyr.elf`, `build/zephyr/zephyr.bin` 
 
 | Fragment | Nội dung |
 |---|---|
-| `sim.conf` | Đảo chiều đọc LDR theo mô hình Wokwi, làm nóng MQ-2 5 s, log tối giản (in thẳng ra UART kể cả khi lỗi lúc khởi động), stack sentinel, lệnh `fg threads` |
+| `sim.conf` | Đảo chiều đọc LDR theo mô hình Wokwi, làm nóng MQ-2 5 s, log tối giản (in thẳng ra UART kể cả khi lỗi lúc khởi động), stack sentinel, công cụ đo thời gian thực |
+| `rt.conf` | Công cụ đo thời gian thực cho phần cứng: tracing, tải giả lập, benchmark, `fg threads` |
 | `comm.conf` | Network stack, Wi-Fi, MQTT; giữ thread mạng dưới mọi thread an toàn |
 | `secrets.conf` | SSID, mật khẩu Wi-Fi, host và access token CoreIoT |
 
@@ -249,6 +253,11 @@ Shell chạy trên UART0, 115200 baud.
 | `fg latency [reset]` | Thống kê độ trễ phản ứng |
 | `fg log` | Nhật ký sự kiện (kèm số lần khởi động `boot`) |
 | `fg threads` | CPU, ưu tiên, trạng thái từng thread (khi bật `CONFIG_FG_DIAG_STATS`) |
+| `fg rt [reset]` | Thời gian thực thi C và thời gian đáp ứng R đo được của từng thread an toàn |
+| `fg rta` | Phân tích thời gian đáp ứng (RTA) trên C đo được |
+| `fg trace start\|stop\|dump` | Ghi dòng thời gian lập lịch (Zephyr tracing) |
+| `fg load cpu <%>` / `fg load net <Hz>` | Tạo tải CPU ưu tiên thấp / tải MQTT |
+| `fg bench <n>` | Đo tự động độ trễ phát hiện và phản ứng qua n chu kỳ báo động |
 | `kernel thread list` | Stack và ưu tiên mọi thread của kernel |
 
 ## 10. Kiến trúc phần mềm
@@ -283,6 +292,31 @@ Số ưu tiên nhỏ hơn là ưu tiên cao hơn. Thread của driver Wi-Fi đư
 **Lưu trữ không bay hơi** (`CONFIG_FG_PERSIST`, mặc định bật): cấu hình được chấp nhận và nhật ký 64 sự kiện gần nhất được lưu bằng settings/NVS trên phân vùng `storage_partition`. Sau khi khởi động lại, cấu hình được khôi phục, nhật ký giữ lịch sử của các lần khởi động trước, và các sự kiện chưa gửi được gửi lại lên CoreIoT. Việc ghi flash chỉ diễn ra trong thread `fg_log` (ưu tiên 9) vì thao tác này tạm dừng cache của cả hai nhân.
 
 Máy trạng thái: `INIT → WARMUP → NORMAL ⇄ PRE_ALARM → ALARM_FIRE / ALARM_GAS`, thêm `DRILL` cho diễn tập. Chi tiết luật tổng hợp và hành vi cơ cấu chấp hành theo trạng thái: [`docs/SRS.md`](docs/SRS.md).
+
+### Phân tích thời gian thực
+
+Mỗi thread an toàn đánh dấu đầu và cuối của từng job. **C** là thời gian CPU chính thread đó dùng (bộ đếm của scheduler, không tính thời gian bị chiếm quyền); **R** là thời gian thực từ lúc job được kích hoạt đến lúc xong. Thời gian ghi flash, vốn dừng cache của cả hai nhân, được ghi nhận riêng làm hệ số chặn **B**.
+
+`fg rta` lặp phương trình
+
+```
+R_i = C_i + B + Σ_{j ∈ hp(i)} ⌈R_i / T_j⌉ · C_j
+```
+
+với C bằng 1,2 lần giá trị lớn nhất đo được, rồi so R_i với hạn chót D_i và với R đo được. Mô hình T/D của từng thread nằm trong `src/safety/rt_stats.c`.
+
+Quy trình đo gợi ý:
+
+1. `fg rt reset`, sau đó `fg load cpu 50` (và `fg load net 20` nếu build có CoreIoT).
+2. `fg bench 20`: 20 chu kỳ báo động qua đường dữ liệu thật (ghi đè số đo MQ-2 ở thread ADC, thẻ Chỉ huy để xoá báo động). Kết quả gồm độ trễ phát hiện và độ trễ phản ứng.
+3. `fg rt` và `fg rta` để lấy bảng C, R và kết quả phân tích.
+4. `fg trace start`, chờ vài giây, `fg trace dump`; lưu log serial rồi chuyển sang dòng thời gian:
+
+```sh
+python scripts/trace2perfetto.py capture.log trace.json
+```
+
+Mở `trace.json` tại [ui.perfetto.dev](https://ui.perfetto.dev). Số liệu chính thức nên lấy trên phần cứng; Wokwi không mô phỏng chính xác thời gian thực thi.
 
 ## 11. Kiểm thử
 

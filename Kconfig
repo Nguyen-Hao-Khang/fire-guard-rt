@@ -58,6 +58,31 @@ config FG_PERSIST
 	help
 	  Uses the settings subsystem on NVS in the storage partition.
 
+config FG_RT_STATS
+	bool "Measure execution and response times of the safety threads"
+	default y
+	select THREAD_RUNTIME_STATS
+	select SCHED_THREAD_USAGE
+	help
+	  Adds the "fg rt" and "fg rta" shell commands.
+
+config FG_TRACE
+	bool "Capture a scheduler timeline through the tracing user hooks"
+	depends on TRACING_USER
+	help
+	  Adds "fg trace start|stop|dump". Enable CONFIG_TRACING and
+	  CONFIG_TRACING_USER as well.
+
+config FG_TRACE_EVENTS
+	int "Trace buffer size (events)"
+	depends on FG_TRACE
+	default 2048
+
+config FG_BENCH
+	bool "Load generators and automated alarm benchmark"
+	help
+	  Adds "fg load cpu|net" and "fg bench".
+
 config FG_DIAG_STATS
 	bool "Thread usage and data flow diagnostics"
 	select THREAD_RUNTIME_STATS
