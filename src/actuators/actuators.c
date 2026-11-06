@@ -186,6 +186,7 @@ void fg_act_thread(void *p1, void *p2, void *p3)
 		bool entered_alarm = false;
 
 		fg_wdt_feed(FG_TH_ACT);
+		fg_hang_point(FG_TH_ACT);
 		if (zbus_sub_wait(&act_sub, &chan, K_MSEC(TICK_MS)) == 0) {
 			uint8_t prev = st.state;
 

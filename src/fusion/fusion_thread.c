@@ -91,6 +91,7 @@ void fg_fusion_thread(void *p1, void *p2, void *p3)
 		bool changed = false;
 
 		fg_wdt_feed(FG_TH_FUSION);
+		fg_hang_point(FG_TH_FUSION);
 		if (zbus_sub_wait(&fusion_sub, &chan, K_MSEC(250)) != 0) {
 			continue;
 		}
