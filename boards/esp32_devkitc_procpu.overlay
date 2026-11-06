@@ -23,7 +23,8 @@
 	dht22: dht22 {
 		compatible = "aosong,dht";
 		status = "okay";
-		dio-gpios = <&gpio0 4 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+		/* The aosong,dht driver drives the line in active-low logic */
+		dio-gpios = <&gpio0 4 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
 		dht22;
 	};
 
@@ -78,6 +79,19 @@
 		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
 		zephyr,resolution = <12>;
 	};
+};
+
+/*
+ * The board file describes an ESP32-WROVER-E, which reserves GPIO16/17 for
+ * PSRAM. The target module (NodeMCU, ESP32-WROOM-32) has no PSRAM, so only
+ * the SPI flash pins stay reserved and GPIO16/17 drive the RGB LED.
+ */
+&gpio0 {
+	gpio-reserved-ranges = <6 6>;
+};
+
+&psram0 {
+	status = "disabled";
 };
 
 /* GPIO21/22 are used by RGB-B and RC522-RST */

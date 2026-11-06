@@ -139,6 +139,13 @@ struct fg_cmd_msg {
 	uint16_t duration_s;
 };
 
+/*
+ * Timeout for reading a channel after a notification. The publisher may
+ * still hold the channel lock, so K_NO_WAIT can fail and leave the
+ * destination buffer stale.
+ */
+#define FG_CHAN_READ_TIMEOUT K_MSEC(10)
+
 ZBUS_CHAN_DECLARE(chan_adc, chan_dht, chan_presence, chan_rfid, chan_state,
 		  chan_fault, chan_config, chan_cmd);
 

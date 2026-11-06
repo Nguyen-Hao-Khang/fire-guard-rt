@@ -79,6 +79,8 @@ void fg_fusion_thread(void *p1, void *p2, void *p3)
 	fg_config_get(&cfg);
 	fusion_init(&ctx, &cfg, fg_now_ms(), CONFIG_FG_WARMUP_S * 1000U);
 	fg_wdt_register(FG_TH_FUSION, CONFIG_FG_CORE_WDT_MS, true);
+	/* Publishers inherit this thread priority while notifying it */
+	zbus_obs_attach_to_thread(&fusion_sub);
 
 	if (persist.magic == RESTORE_MAGIC && fusion_restore(&ctx, persist.state, fg_now_ms())) {
 		LOG_WRN("restoring %s after reset", fg_state_name(ctx.state));
@@ -97,7 +99,9 @@ void fg_fusion_thread(void *p1, void *p2, void *p3)
 			struct fg_adc_msg adc;
 			uint8_t faults = fg_fault_mask();
 
-			zbus_chan_read(&chan_adc, &adc, K_NO_WAIT);
+			if (zbus_chan_read(&chan_adc, &adc, FG_CHAN_READ_TIMEOUT) != 0) {
+				continue;
+			}
 			struct fusion_input in = {
 				.now_ms = adc.ts_ms,
 				.light_mv = adc.light_mv,
@@ -113,11 +117,15 @@ void fg_fusion_thread(void *p1, void *p2, void *p3)
 			dht_used_ts = dht.ts_ms;
 			changed = fusion_step(&ctx, &in);
 		} else if (chan == &chan_dht) {
-			zbus_chan_read(&chan_dht, &dht, K_NO_WAIT);
+			if (zbus_chan_read(&chan_dht, &dht, FG_CHAN_READ_TIMEOUT) != 0) {
+				continue;
+			}
 		} else if (chan == &chan_rfid) {
 			struct fg_rfid_msg card;
 
-			zbus_chan_read(&chan_rfid, &card, K_NO_WAIT);
+			if (zbus_chan_read(&chan_rfid, &card, FG_CHAN_READ_TIMEOUT) != 0) {
+				continue;
+			}
 			if (card.authorized) {
 				changed = fusion_override(&ctx, fg_now_ms());
 				fg_act_beep(changed ? FG_BEEP_ACCEPTED : FG_BEEP_IGNORED);
@@ -128,7 +136,9 @@ void fg_fusion_thread(void *p1, void *p2, void *p3)
 		} else if (chan == &chan_presence) {
 			struct fg_presence_msg p;
 
-			zbus_chan_read(&chan_presence, &p, K_NO_WAIT);
+			if (zbus_chan_read(&chan_presence, &p, FG_CHAN_READ_TIMEOUT) != 0) {
+				continue;
+			}
 			trapped = p.trapped;
 			publish_state();
 		} else if (chan == &chan_fault) {
@@ -139,7 +149,9 @@ void fg_fusion_thread(void *p1, void *p2, void *p3)
 		} else if (chan == &chan_cmd) {
 			struct fg_cmd_msg cmd;
 
-			zbus_chan_read(&chan_cmd, &cmd, K_NO_WAIT);
+			if (zbus_chan_read(&chan_cmd, &cmd, FG_CHAN_READ_TIMEOUT) != 0) {
+				continue;
+			}
 			changed = fusion_drill(&ctx, fg_now_ms(),
 					       cmd.kind == FG_CMD_DRILL_START ? cmd.duration_s : 0);
 		}

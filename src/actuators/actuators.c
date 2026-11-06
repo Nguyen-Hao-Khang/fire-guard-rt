@@ -179,6 +179,8 @@ void fg_act_thread(void *p1, void *p2, void *p3)
 	enum fg_beep beep = FG_BEEP_NONE;
 
 	fg_wdt_register(FG_TH_ACT, CONFIG_FG_CORE_WDT_MS, true);
+	/* Publishers inherit this thread priority while notifying it */
+	zbus_obs_attach_to_thread(&act_sub);
 
 	while (1) {
 		bool entered_alarm = false;
@@ -187,7 +189,9 @@ void fg_act_thread(void *p1, void *p2, void *p3)
 		if (zbus_sub_wait(&act_sub, &chan, K_MSEC(TICK_MS)) == 0) {
 			uint8_t prev = st.state;
 
-			zbus_chan_read(&chan_state, &st, K_NO_WAIT);
+			if (zbus_chan_read(&chan_state, &st, FG_CHAN_READ_TIMEOUT) != 0) {
+				continue;
+			}
 			apply_power(&st);
 			entered_alarm = fg_state_is_alarm(st.state) && !fg_state_is_alarm(prev);
 		}

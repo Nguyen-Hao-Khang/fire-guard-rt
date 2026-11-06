@@ -103,6 +103,9 @@ void fg_log_thread(void *p1, void *p2, void *p3)
 	uint8_t last_state = 0xFF;
 	bool last_trapped = false;
 
+	/* Publishers inherit this thread priority while notifying it */
+	zbus_obs_attach_to_thread(&log_sub);
+
 	while (1) {
 		if (zbus_sub_wait(&log_sub, &chan, K_FOREVER) != 0) {
 			continue;
@@ -110,7 +113,9 @@ void fg_log_thread(void *p1, void *p2, void *p3)
 		if (chan == &chan_state) {
 			struct fg_state_msg st;
 
-			zbus_chan_read(chan, &st, K_NO_WAIT);
+			if (zbus_chan_read(chan, &st, FG_CHAN_READ_TIMEOUT) != 0) {
+				continue;
+			}
 			if (st.state != last_state) {
 				last_state = st.state;
 				fg_event_log_add(FG_EV_STATE, st.state, st.cause, NULL);
@@ -122,12 +127,16 @@ void fg_log_thread(void *p1, void *p2, void *p3)
 		} else if (chan == &chan_fault) {
 			struct fg_fault_msg f;
 
-			zbus_chan_read(chan, &f, K_NO_WAIT);
+			if (zbus_chan_read(chan, &f, FG_CHAN_READ_TIMEOUT) != 0) {
+				continue;
+			}
 			fg_event_log_add(FG_EV_FAULT, f.sensor, f.kind | (f.active << 7), NULL);
 		} else if (chan == &chan_rfid) {
 			struct fg_rfid_msg c;
 
-			zbus_chan_read(chan, &c, K_NO_WAIT);
+			if (zbus_chan_read(chan, &c, FG_CHAN_READ_TIMEOUT) != 0) {
+				continue;
+			}
 			fg_event_log_add(FG_EV_CARD, c.authorized, 0, c.uid);
 		}
 	}
