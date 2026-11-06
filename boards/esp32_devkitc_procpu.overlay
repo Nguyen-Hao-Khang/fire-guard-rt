@@ -7,12 +7,13 @@
  *  GPIO27 / GPIO26  HC-SR04 TRIG / ECHO (ECHO through divider)
  *  GPIO18/19/23/5   RC522 SCK / MISO / MOSI / SDA(CS)   GPIO22 RC522 RST
  *  GPIO13           Relay IN
- *  GPIO33           Fan (MOSFET gate)
- *  GPIO25           Buzzer
+ *  GPIO33           Fan (MOSFET gate), LEDC channel 0
+ *  GPIO25           Buzzer, LEDC channel 1
  *  GPIO16/17/21     LED RGB R / G / B
  */
 #include <zephyr/dt-bindings/adc/adc.h>
 #include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
 
 / {
 	chosen {
@@ -43,11 +44,16 @@
 		compatible = "gpio-leds";
 		/* Real relay modules are often active-low: change flag if needed */
 		relay: relay { gpios = <&gpio0 13 GPIO_ACTIVE_HIGH>; label = "Relay mains"; };
-		fan: fan { gpios = <&gpio1 1 GPIO_ACTIVE_HIGH>; label = "Exhaust fan"; };
-		buzzer: buzzer { gpios = <&gpio0 25 GPIO_ACTIVE_HIGH>; label = "Buzzer"; };
 		led_r: led_r { gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>; label = "LED R"; };
 		led_g: led_g { gpios = <&gpio0 17 GPIO_ACTIVE_HIGH>; label = "LED G"; };
 		led_b: led_b { gpios = <&gpio0 21 GPIO_ACTIVE_HIGH>; label = "LED B"; };
+	};
+
+	/* LEDC: fan at 25 kHz (above audible range), buzzer tone at 2.7 kHz */
+	fg_pwm_outputs {
+		compatible = "pwm-leds";
+		fan: fan { pwms = <&ledc0 0 PWM_USEC(40) PWM_POLARITY_NORMAL>; label = "Exhaust fan"; };
+		buzzer: buzzer { pwms = <&ledc0 1 PWM_USEC(370) PWM_POLARITY_NORMAL>; label = "Buzzer"; };
 	};
 
 	aliases {
@@ -119,6 +125,34 @@
 			pinmux = <SPIM3_MOSI_GPIO23>;
 			output-low;
 		};
+	};
+};
+
+&pinctrl {
+	ledc0_fg: ledc0_fg {
+		group1 {
+			pinmux = <LEDC_CH0_GPIO33>,
+				 <LEDC_CH1_GPIO25>;
+			output-enable;
+		};
+	};
+};
+
+&ledc0 {
+	pinctrl-0 = <&ledc0_fg>;
+	pinctrl-names = "default";
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel0@0 {
+		reg = <0x0>;
+		timer = <0>;
+	};
+
+	channel1@1 {
+		reg = <0x1>;
+		timer = <1>;
 	};
 };
 

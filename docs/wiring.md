@@ -10,8 +10,8 @@ Phân bổ chân được định nghĩa trong `boards/esp32_devkitc_procpu.over
 | HC-SR04 | VCC / TRIG / ECHO / GND | 5V / GPIO27 / GPIO26 / GND | ECHO 5 V: phân áp 1 kΩ + 2 kΩ |
 | RC522 | 3.3V / SDA / SCK / MOSI / MISO / RST / GND | 3V3 / GPIO5 / GPIO18 / GPIO23 / GPIO19 / GPIO22 / GND | Chỉ cấp 3,3 V. IRQ để trống |
 | Relay 1 kênh | VCC / IN / GND | 5V / GPIO13 / GND | Tải nối qua COM–NC: relay kích thì cắt tải. Module kích mức thấp: đổi cờ thành `GPIO_ACTIVE_LOW` trong overlay |
-| Quạt 5 V | — | GPIO33 → MOSFET | MOSFET logic-level (hoặc 2N2222 + 1 kΩ ở cực B); diode 1N4007 song song ngược với quạt; nguồn quạt lấy từ 5 V |
-| Buzzer | + / − | GPIO25 / GND | Còi chủ động 3,3–5 V; dòng > 20 mA thì đệm qua transistor |
+| Quạt 5 V | — | GPIO33 → MOSFET | PWM 25 kHz (LEDC kênh 0). MOSFET logic-level (hoặc 2N2222 + 1 kΩ ở cực B); diode 1N4007 song song ngược với quạt; nguồn quạt lấy từ 5 V |
+| Buzzer | + / − | GPIO25 / GND | PWM 2,7 kHz (LEDC kênh 1) cho còi thụ động; còi chủ động thì bật `CONFIG_FG_BUZZER_ACTIVE`. Dòng > 20 mA thì đệm qua transistor |
 | LED RGB (catot chung) | R / G / B / K | GPIO16 / GPIO17 / GPIO21 / GND | Mỗi kênh 220–330 Ω. Anot chung: đổi sang `GPIO_ACTIVE_LOW` |
 
 Lưu ý:

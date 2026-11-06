@@ -1,0 +1,102 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ZEPHYR_SDK_VERSION: 1.0.1
+  ZEPHYR_SDK_INSTALL_DIR: ${{ github.workspace }}/zephyr-sdk
+  BOARD: esp32_devkitc/esp32/procpu
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: workspace
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: workspace/fire_guard_rt
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install host tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build device-tree-compiler gperf
+          pip install west
+
+      - name: Cache west modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            workspace/zephyr
+            workspace/modules
+          key: west-${{ hashFiles('workspace/fire_guard_rt/west.yml') }}
+
+      - name: Initialise west workspace
+        run: |
+          west init -l fire_guard_rt
+          west update --narrow -o=--depth=1
+          west blobs fetch hal_espressif
+          pip install -r zephyr/scripts/requirements-base.txt \
+            -r zephyr/scripts/requirements-build-test.txt \
+            -r zephyr/scripts/requirements-run-test.txt
+          west packages pip --install
+
+      - name: Cache Zephyr SDK
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ZEPHYR_SDK_INSTALL_DIR }}
+          key: zephyr-sdk-${{ env.ZEPHYR_SDK_VERSION }}-xtensa-esp32
+
+      - name: Install Zephyr SDK (xtensa esp32 toolchain)
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        working-directory: ${{ github.workspace }}
+        run: |
+          base=https://github.com/zephyrproject-rtos/sdk-ng/releases/download/v${ZEPHYR_SDK_VERSION}
+          wget -q ${base}/zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-x86_64_minimal.tar.xz
+          wget -q ${base}/toolchain_gnu_linux-x86_64_xtensa-espressif_esp32_zephyr-elf.tar.xz
+          tar xf zephyr-sdk-${ZEPHYR_SDK_VERSION}_linux-x86_64_minimal.tar.xz
+          mv zephyr-sdk-${ZEPHYR_SDK_VERSION} zephyr-sdk
+          mkdir -p zephyr-sdk/gnu
+          tar xf toolchain_gnu_linux-x86_64_xtensa-espressif_esp32_zephyr-elf.tar.xz -C zephyr-sdk/gnu
+
+      - name: Register Zephyr SDK
+        run: ${ZEPHYR_SDK_INSTALL_DIR}/setup.sh -c
+
+      - name: Build simulation
+        run: west build -p -b ${BOARD} -d build-sim fire_guard_rt -- -DEXTRA_CONF_FILE=sim.conf
+
+      - name: Build hardware
+        run: west build -p -b ${BOARD} -d build-hw fire_guard_rt
+
+      - name: Build hardware with CoreIoT
+        run: west build -p -b ${BOARD} -d build-comm fire_guard_rt -- -DEXTRA_CONF_FILE=comm.conf
+
+      - name: Unit tests
+        run: west twister -T fire_guard_rt/tests -p native_sim/native/64 -v --inline-logs -O twister-out
+
+      - name: Upload firmware
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: |
+            workspace/build-sim/zephyr/zephyr.elf
+            workspace/build-sim/zephyr/zephyr.bin
+            workspace/build-sim/flasher_args.json
+            workspace/build-hw/zephyr/zephyr.bin
+            workspace/build-comm/zephyr/zephyr.bin
+          if-no-files-found: error

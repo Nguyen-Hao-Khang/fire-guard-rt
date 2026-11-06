@@ -39,6 +39,11 @@ config FG_LDR_INVERT
 	help
 	  Set when the LDR is on the high side of the divider.
 
+config FG_BUZZER_ACTIVE
+	bool "Buzzer has its own oscillator (active buzzer)"
+	help
+	  Drive the buzzer with a DC level instead of a 2.7 kHz tone.
+
 config FG_COMMANDER_UIDS
 	string "Commander card UIDs (comma separated hex, 4-byte)"
 	default "DEADBEEF,11223344"

@@ -48,8 +48,8 @@ Thời gian phát hiện tuân theo TCVN 5738:2021: lửa ≤ 5 s, khói/gas ≤
 | HC-SR04 | Phát hiện chuyển động | TRIG 27, ECHO 26 (qua cầu phân áp) |
 | RC522 | Xác thực thẻ Chỉ huy | SCK 18, MISO 19, MOSI 23, SDA 5, RST 22 |
 | Relay 1 kênh | Ngắt điện lưới | 13 |
-| Quạt 5 V qua MOSFET | Hút khói | 33 |
-| Buzzer | Còi báo động | 25 |
+| Quạt 5 V qua MOSFET | Hút khói, PWM 25 kHz theo mức gas | 33 |
+| Buzzer | Còi báo động, PWM 2,7 kHz | 25 |
 | LED RGB | Trạng thái, chỉ dẫn thoát hiểm | R 16, G 17, B 21 |
 
 Sơ đồ đấu nối, cầu phân áp và mạch MOSFET: [`docs/wiring.md`](docs/wiring.md). Phân bổ chân được khai báo trong [`boards/esp32_devkitc_procpu.overlay`](boards/esp32_devkitc_procpu.overlay).
@@ -60,6 +60,8 @@ Sơ đồ đấu nối, cầu phân áp và mạch MOSFET: [`docs/wiring.md`](do
 fire_guard_rt/
 ├── CMakeLists.txt                 Danh sách nguồn, sinh build/flasher_args.json cho Wokwi
 ├── Kconfig                        Tham số ứng dụng (CONFIG_FG_*)
+├── west.yml                       Manifest cho workspace độc lập và CI
+├── .github/workflows/             CI: build và unit test
 ├── prj.conf                       Cấu hình Zephyr chung
 ├── sim.conf                       Fragment cho mô phỏng Wokwi
 ├── comm.conf                      Fragment Wi-Fi + MQTT
@@ -115,6 +117,14 @@ west packages pip --install
 ```bat
 cd <workspace>\applications
 git clone https://github.com/Nguyen-Hao-Khang/fire-guard-rt.git fire_guard_rt
+```
+
+Khi chưa có workspace, `west.yml` của dự án tạo một workspace tối giản (Zephyr v4.4.0 và các module ESP32 cần thiết), giống cách CI dựng môi trường:
+
+```sh
+west init -m https://github.com/Nguyen-Hao-Khang/fire-guard-rt.git fireguard-ws
+cd fireguard-ws
+west update --narrow -o=--depth=1
 ```
 
 ### 4.4 VS Code
@@ -177,7 +187,7 @@ Nếu giá trị mặc định của MQ-2 trên Wokwi vượt 2500 mV, hệ th�
 | RC522 (custom chip) | `card` | 0: không có thẻ, 1: thẻ Chỉ huy `DEADBEEF`, 2: thẻ lạ `12345678` |
 | RC522 (custom chip) | `disconnected` | 1: đầu đọc không phản hồi |
 
-Buzzer của Wokwi là loại thụ động nên mức DC không phát ra tiếng.
+Buzzer phát âm 2,7 kHz (còi thụ động, kể cả trên Wokwi); với còi chủ động, bật `CONFIG_FG_BUZZER_ACTIVE`. Độ sáng LED "FAN" trên Wokwi thể hiện tốc độ quạt: 50 % khi diễn tập, 100 % khi cháy, 60–100 % theo mức gas khi rò gas.
 
 ### Debug bằng GDB
 
@@ -275,6 +285,8 @@ Số ưu tiên nhỏ hơn là ưu tiên cao hơn. Thread của driver Wi-Fi đư
 Máy trạng thái: `INIT → WARMUP → NORMAL ⇄ PRE_ALARM → ALARM_FIRE / ALARM_GAS`, thêm `DRILL` cho diễn tập. Chi tiết luật tổng hợp và hành vi cơ cấu chấp hành theo trạng thái: [`docs/SRS.md`](docs/SRS.md).
 
 ## 11. Kiểm thử
+
+**CI**: workflow `.github/workflows/build.yml` chạy trên mỗi pull request và mỗi lần push lên `main`. Workflow dựng workspace từ `west.yml`, build ba cấu hình (mô phỏng, phần cứng, phần cứng + CoreIoT), chạy toàn bộ unit test bằng Twister và đính kèm file firmware.
 
 **Unit test** chạy trên `native_sim` (Linux hoặc WSL): `tests/fusion` cho máy trạng thái, `tests/storage` cho lưu trữ cấu hình và nhật ký qua khởi động lại.
 
