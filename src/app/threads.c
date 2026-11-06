@@ -11,14 +11,14 @@
 
 LOG_MODULE_REGISTER(fg_threads, LOG_LEVEL_INF);
 
-#define STACK_ACT    1536
-#define STACK_FAULT  1536
-#define STACK_FUSION 2048
-#define STACK_ADC    1536
-#define STACK_DHT    1536
-#define STACK_ULTRA  1536
-#define STACK_RFID   1536
-#define STACK_LOG    1536
+#define STACK_ACT    2048
+#define STACK_FAULT  2048
+#define STACK_FUSION 2560
+#define STACK_ADC    2048
+#define STACK_DHT    2048
+#define STACK_ULTRA  2048
+#define STACK_RFID   2048
+#define STACK_LOG    2048
 #define STACK_COMM   4096
 
 K_THREAD_STACK_DEFINE(stk_act, STACK_ACT);

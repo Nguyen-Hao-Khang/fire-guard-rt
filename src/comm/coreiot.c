@@ -358,6 +358,8 @@ void fg_comm_thread(void *p1, void *p2, void *p3)
 
 	uint32_t backoff_ms = 2000;
 
+	/* Publishers inherit this thread priority while notifying it */
+	zbus_obs_attach_to_thread(&comm_sub);
 	net_mgmt_init_event_callback(&ip_cb, ip_handler, NET_EVENT_IPV4_ADDR_ADD);
 	net_mgmt_add_event_callback(&ip_cb);
 
