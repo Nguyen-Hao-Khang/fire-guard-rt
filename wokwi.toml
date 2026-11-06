@@ -3,8 +3,9 @@
 #   west build -b esp32_devkitc/esp32/procpu -- "-DEXTRA_CONF_FILE=sim.conf"
 [wokwi]
 version = 1
-firmware = "build/wokwi_flash.bin"
+firmware = "build/flasher_args.json"
 elf = "build/zephyr/zephyr.elf"
+gdbServerPort = 3333
 
 [[chip]]
 name = "rc522"

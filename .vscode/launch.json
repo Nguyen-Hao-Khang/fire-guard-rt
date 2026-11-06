@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Wokwi GDB (ESP32 Zephyr)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/zephyr/zephyr.elf",
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/EmbeddedLabs/zephyr-sdk-1.0.1/gnu/xtensa-espressif_esp32_zephyr-elf/bin/xtensa-espressif_esp32_zephyr-elf-gdb.exe",
+      "miDebuggerServerAddress": "localhost:3333"
+    }
+  ]
+}

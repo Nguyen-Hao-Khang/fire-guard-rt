@@ -14,7 +14,6 @@ fire_guard_rt/
 ├── dts/bindings/nxp,mfrc522.yaml          binding cho RC522
 ├── diagram.json, wokwi.toml               mạch mô phỏng Wokwi
 ├── wokwi/chips/rc522.chip.{c,json,wasm}   custom chip RC522 cho Wokwi
-├── scripts/mk_flash_image.py              tạo build/wokwi_flash.bin
 ├── src/
 │   ├── main.c
 │   ├── app/        channels (zbus), config, bảng thread, shell "fg"
@@ -62,9 +61,10 @@ Nạp phần cứng thật: `west flash`, xem log: `west espressif monitor`.
 
 ## Chạy mô phỏng Wokwi (VS Code)
 
-1. Build bản `sim.conf` (lệnh trên). Build sinh ra `build/wokwi_flash.bin` (ảnh flash, app ở 0x1000).
+1. Build bản `sim.conf` (lệnh trên). Build sinh ra `build/flasher_args.json`, file này chỉ cho Wokwi nạp `zephyr.bin` vào offset 0x1000 giống chip thật.
 2. Mở thư mục `fire_guard_rt` trong VS Code, `F1` → **Wokwi: Start Simulator** (đọc `wokwi.toml` và `diagram.json`).
-3. Tương tác:
+3. Khởi động đúng sẽ in `*** Booting Zephyr OS ***`, `8 threads started`, `MFRC522 ready`. Sau 5 s làm nóng, với giá trị mặc định của MQ-2 trên Wokwi (khoảng 2,5 V) hệ thống vào `ALARM_GAS`: giảm ppm rồi quẹt thẻ Chỉ huy để về `NORMAL`.
+4. Tương tác:
 
 | Thử nghiệm | Thao tác trên Wokwi |
 |---|---|
@@ -77,7 +77,11 @@ Nạp phần cứng thật: `west flash`, xem log: `west espressif monitor`.
 | Thẻ lạ | `card` = 2 (12345678) |
 | Hỏng đầu đọc | `disconnected` = 1 |
 
-Ghi chú: buzzer của Wokwi là loại thụ động nên mức DC không phát ra tiếng; trạng thái còi xem qua log hoặc logic analyzer của Wokwi.
+Ghi chú:
+
+- Buzzer của Wokwi là loại thụ động nên mức DC không phát ra tiếng; trạng thái còi xem qua log hoặc logic analyzer của Wokwi.
+- Bản `sim.conf` dùng log tối giản (in thẳng ra UART, kể cả khi lỗi lúc khởi động) và bật `fg threads`.
+- `wokwi.toml` mở GDB server ở cổng 3333; cấu hình "Wokwi GDB (ESP32 Zephyr)" trong `.vscode/launch.json` gắn gdb của Zephyr SDK vào chip mô phỏng.
 
 ## Shell chẩn đoán (UART 115200)
 
@@ -90,6 +94,7 @@ Ghi chú: buzzer của Wokwi là loại thụ động nên mức DC không phát
 | `fg drill [giây\|stop]` | Diễn tập |
 | `fg latency [reset]` | Thống kê độ trễ phản ứng (quyết định → chấp hành) |
 | `fg log` | Nhật ký sự kiện |
+| `fg threads` | CPU, ưu tiên, trạng thái từng thread và dữ liệu cảm biến mới nhất (bản `sim.conf`) |
 | `kernel thread list` | Ưu tiên, stack của mọi thread (đầu vào RTA) |
 
 ## Kênh dữ liệu (zbus)
@@ -128,8 +133,9 @@ Workqueue hệ thống (ưu tiên −1, cooperative) cần được đo như th�
 |---|---|
 | Khung dự án, bảng thread, zbus, shell | Xong, build sạch (Zephyr 4.4.0) |
 | Fusion + máy trạng thái | Xong, 12/12 unit test qua (`tests/fusion`) |
-| Task Watchdog + fault manager + tiêm lỗi | Xong, cần kiểm tra trên Wokwi/HW |
-| Driver RC522 + custom chip Wokwi | Xong, giao thức đã kiểm tra với mô hình chip |
+| Mô phỏng Wokwi | Khởi động, phát hiện rò gas, DHT22, RC522 và override bằng thẻ đã chạy |
+| Task Watchdog + fault manager + tiêm lỗi | Xong, cần kiểm tra bằng `fg hang` trên Wokwi/HW |
+| Driver RC522 + custom chip Wokwi | Xong, đã chạy trên Wokwi |
 | MQTT CoreIoT (telemetry thích nghi, attributes, RPC) | Build được, chưa chạy với broker thật |
 | Lưu cấu hình (NVS) và nhật ký trên flash | TODO |
 | Zephyr Tracing + bảng RTA | TODO |
