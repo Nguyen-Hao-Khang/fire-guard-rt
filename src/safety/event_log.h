@@ -2,7 +2,8 @@
  * Event log (SRS FR-07)
  *
  * Ring buffer of events consumed by the comm module (send + mark sent).
- * TODO(persist): back the ring with a flash partition (NVS/LittleFS).
+ * With CONFIG_FG_PERSIST the ring is mirrored to flash by the log thread,
+ * so events survive a reset and unsent ones are delivered afterwards.
  */
 #ifndef FG_EVENT_LOG_H_
 #define FG_EVENT_LOG_H_
@@ -22,11 +23,18 @@ enum fg_event_type {
 
 struct fg_event {
 	uint32_t seq;
-	uint32_t ts_ms;
+	uint32_t ts_ms;   /* uptime within the boot below */
+	uint16_t boot;    /* boot counter from storage, 0 without storage */
 	uint8_t type;
 	uint8_t a;
 	uint8_t b;
 	uint8_t uid[4];
+};
+
+/* Persisted ring position */
+struct fg_event_log_head {
+	uint32_t next_seq;
+	uint32_t sent_seq;
 };
 
 void fg_event_log_add(uint8_t type, uint8_t a, uint8_t b, const uint8_t *uid);
@@ -40,5 +48,15 @@ int fg_event_log_get(int index_from_oldest, struct fg_event *out);
 int fg_event_log_count(void);
 
 const char *fg_event_type_name(uint8_t type);
+
+/* Write events not yet in storage (called by the log thread) */
+void fg_event_log_flush(void);
+
+/* Test hook: forget the RAM copy, as after a reset */
+void fg_event_log_reset_ram(void);
+
+/* Called by the storage module while loading */
+void fg_event_log_restore_head(const struct fg_event_log_head *h);
+void fg_event_log_restore_entry(const struct fg_event *e);
 
 #endif /* FG_EVENT_LOG_H_ */

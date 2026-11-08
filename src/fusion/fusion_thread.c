@@ -11,6 +11,7 @@
 #include "app/config.h"
 #include "fusion/fusion.h"
 #include "safety/fault_mgr.h"
+#include "safety/rt_stats.h"
 #include "actuators/actuators.h"
 
 LOG_MODULE_REGISTER(fg_fusion, LOG_LEVEL_INF);
@@ -90,8 +91,13 @@ void fg_fusion_thread(void *p1, void *p2, void *p3)
 	while (1) {
 		bool changed = false;
 
+		fg_rt_end(FG_TH_FUSION);
 		fg_wdt_feed(FG_TH_FUSION);
-		if (zbus_sub_wait(&fusion_sub, &chan, K_MSEC(250)) != 0) {
+		fg_hang_point(FG_TH_FUSION);
+		int woke = zbus_sub_wait(&fusion_sub, &chan, K_MSEC(250));
+
+		fg_rt_begin(FG_TH_FUSION, 0);
+		if (woke != 0) {
 			continue;
 		}
 

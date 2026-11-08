@@ -7,6 +7,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/hwinfo.h>
 #include <zephyr/logging/log.h>
+#include "app/storage.h"
 #include "app/threads.h"
 #include "actuators/actuators.h"
 #include "safety/event_log.h"
@@ -30,6 +31,12 @@ int main(void)
 	(void)hwinfo_clear_reset_cause();
 	LOG_INF("FireGuard-RT v%s, reset cause 0x%08x%s", FG_VERSION, cause,
 		(cause & RESET_WATCHDOG) ? " (WATCHDOG)" : "");
+
+	/* Restores configuration and event history before anything is logged */
+	err = fg_storage_init();
+	if (err) {
+		LOG_ERR("storage unavailable (%d), running from defaults", err);
+	}
 	fg_event_log_add(FG_EV_BOOT, (cause & RESET_WATCHDOG) ? 1 : 0, 0, NULL);
 
 	err = fg_wdt_init();

@@ -111,6 +111,13 @@ static int cmd_config(const struct shell *sh, size_t argc, char **argv)
 {
 	struct fg_config c;
 
+	if (argc > 1) {
+		if (strcmp(argv[1], "reset") != 0) {
+			shell_error(sh, "usage: config [reset]");
+			return -EINVAL;
+		}
+		return fg_config_reset();
+	}
 	fg_config_get(&c);
 	shell_print(sh, "sample_period_ms  %u", c.sample_period_ms);
 	shell_print(sh, "callin_period_s   %u", c.callin_period_s);
@@ -149,27 +156,35 @@ static int __maybe_unused cmd_threads(const struct shell *sh, size_t argc, char 
 static int cmd_log(const struct shell *sh, size_t argc, char **argv)
 {
 	struct fg_event e;
+	int n = fg_event_log_count();
 
-	for (int i = 0; fg_event_log_get(i, &e) == 0; i++) {
-		shell_print(sh, "#%u %8u ms %-8s a=%u b=0x%02x", e.seq, e.ts_ms,
+	for (int i = 0; i < n; i++) {
+		int r = fg_event_log_get(i, &e);
+
+		if (r < 0) {
+			break;
+		}
+		if (r > 0) {
+			continue; /* slot not restored from storage */
+		}
+		shell_print(sh, "#%u boot %u %8u ms %-8s a=%u b=0x%02x", e.seq, e.boot, e.ts_ms,
 			    fg_event_type_name(e.type), e.a, e.b);
 	}
 	return 0;
 }
 
-SHELL_STATIC_SUBCMD_SET_CREATE(
-	fg_cmds,
-	SHELL_CMD(status, NULL, "System state, sensors, faults", cmd_status),
-	SHELL_CMD(config, NULL, "Show runtime configuration", cmd_config),
-	SHELL_CMD_ARG(set, NULL, "set <key> <value>", cmd_set, 3, 0),
-	SHELL_CMD_ARG(hang, NULL, "hang <adc|dht|ultra|rfid|fusion|act> (fault injection)",
-		      cmd_hang, 2, 0),
-	SHELL_CMD_ARG(card, NULL, "card <uid hex8> (simulate RFID card)", cmd_card, 2, 0),
-	SHELL_CMD_ARG(drill, NULL, "drill [seconds|stop]", cmd_drill, 1, 1),
-	SHELL_CMD_ARG(latency, NULL, "latency [reset]", cmd_latency, 1, 1),
-	SHELL_CMD(log, NULL, "Dump event log", cmd_log),
-	SHELL_COND_CMD(CONFIG_FG_DIAG_STATS, threads, NULL, "Thread CPU usage and data flow",
-		       cmd_threads),
-	SHELL_SUBCMD_SET_END);
-
+SHELL_SUBCMD_SET_CREATE(fg_cmds, (fg));
 SHELL_CMD_REGISTER(fg, &fg_cmds, "FireGuard-RT commands", NULL);
+
+SHELL_SUBCMD_ADD((fg), status, NULL, "System state, sensors, faults", cmd_status, 1, 0);
+SHELL_SUBCMD_ADD((fg), config, NULL, "config [reset] (show or restore defaults)", cmd_config, 1,
+		 1);
+SHELL_SUBCMD_ADD((fg), set, NULL, "set <key> <value>", cmd_set, 3, 0);
+SHELL_SUBCMD_ADD((fg), hang, NULL, "hang <adc|dht|ultra|rfid|fusion|act> (fault injection)",
+		 cmd_hang, 2, 0);
+SHELL_SUBCMD_ADD((fg), card, NULL, "card <uid hex8> (simulate RFID card)", cmd_card, 2, 0);
+SHELL_SUBCMD_ADD((fg), drill, NULL, "drill [seconds|stop]", cmd_drill, 1, 1);
+SHELL_SUBCMD_ADD((fg), latency, NULL, "latency [reset]", cmd_latency, 1, 1);
+SHELL_SUBCMD_ADD((fg), log, NULL, "Dump event log", cmd_log, 1, 0);
+SHELL_SUBCMD_COND_ADD(IS_ENABLED(CONFIG_FG_DIAG_STATS), (fg), threads, NULL,
+		      "Thread CPU usage and data flow", cmd_threads, 1, 0);

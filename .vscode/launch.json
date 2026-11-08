@@ -8,7 +8,7 @@
       "program": "${workspaceFolder}/build/zephyr/zephyr.elf",
       "cwd": "${workspaceFolder}",
       "MIMode": "gdb",
-      "miDebuggerPath": "C:/EmbeddedLabs/zephyr-sdk-1.0.1/gnu/xtensa-espressif_esp32_zephyr-elf/bin/xtensa-espressif_esp32_zephyr-elf-gdb.exe",
+      "miDebuggerPath": "${env:ZEPHYR_SDK_INSTALL_DIR}/gnu/xtensa-espressif_esp32_zephyr-elf/bin/xtensa-espressif_esp32_zephyr-elf-gdb.exe",
       "miDebuggerServerAddress": "localhost:3333"
     }
   ]

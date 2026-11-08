@@ -1,0 +1,22 @@
+# West manifest for building FireGuard-RT standalone (used by CI).
+# Inside an existing Zephyr v4.4.0 workspace this file is not needed.
+manifest:
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/zephyrproject-rtos
+
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: v4.4.0
+      import:
+        name-allowlist:
+          - hal_espressif
+          - hal_xtensa
+          - mbedtls
+          - tf-psa-crypto
+          - hostap
+          - cmsis_6
+
+  self:
+    path: fire_guard_rt

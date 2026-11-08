@@ -34,4 +34,10 @@ void fg_config_get(struct fg_config *out);
  */
 int fg_config_set(const char *key, int32_t value);
 
+/* Apply a configuration loaded from storage (validated, not saved again) */
+void fg_config_restore(const struct fg_config *c);
+
+/* Restore the built-in defaults and erase the stored configuration */
+int fg_config_reset(void);
+
 #endif /* FG_CONFIG_H_ */

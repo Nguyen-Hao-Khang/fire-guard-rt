@@ -39,9 +39,49 @@ config FG_LDR_INVERT
 	help
 	  Set when the LDR is on the high side of the divider.
 
+config FG_BUZZER_ACTIVE
+	bool "Buzzer has its own oscillator (active buzzer)"
+	help
+	  Drive the buzzer with a DC level instead of a 2.7 kHz tone.
+
 config FG_COMMANDER_UIDS
 	string "Commander card UIDs (comma separated hex, 4-byte)"
 	default "DEADBEEF,11223344"
+
+config FG_PERSIST
+	bool "Keep configuration and event log in flash"
+	default y
+	select FLASH
+	select FLASH_MAP
+	select NVS
+	select SETTINGS
+	help
+	  Uses the settings subsystem on NVS in the storage partition.
+
+config FG_RT_STATS
+	bool "Measure execution and response times of the safety threads"
+	default y
+	select THREAD_RUNTIME_STATS
+	select SCHED_THREAD_USAGE
+	help
+	  Adds the "fg rt" and "fg rta" shell commands.
+
+config FG_TRACE
+	bool "Capture a scheduler timeline through the tracing user hooks"
+	depends on TRACING_USER
+	help
+	  Adds "fg trace start|stop|dump". Enable CONFIG_TRACING and
+	  CONFIG_TRACING_USER as well.
+
+config FG_TRACE_EVENTS
+	int "Trace buffer size (events)"
+	depends on FG_TRACE
+	default 2048
+
+config FG_BENCH
+	bool "Load generators and automated alarm benchmark"
+	help
+	  Adds "fg load cpu|net" and "fg bench".
 
 config FG_DIAG_STATS
 	bool "Thread usage and data flow diagnostics"

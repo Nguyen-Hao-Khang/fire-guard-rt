@@ -3,37 +3,97 @@
  *
  * Relay and fan are switched as soon as a new chan_state message arrives
  * (event driven: this is the "reaction" path of NFR-02). Buzzer and LED
- * patterns are rendered on a 50 ms tick.
+ * patterns, and the gas-proportional fan speed, are rendered on a 50 ms
+ * tick. Fan and buzzer are LEDC PWM outputs.
  */
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/gpio.h>
+#include <zephyr/drivers/pwm.h>
 #include <zephyr/sys/atomic.h>
 #include <zephyr/logging/log.h>
 #include "app/channels.h"
+#include "app/config.h"
 #include "actuators/actuators.h"
 #include "safety/fault_mgr.h"
+#include "safety/rt_stats.h"
 
 LOG_MODULE_REGISTER(fg_act, LOG_LEVEL_INF);
 
 #define TICK_MS 50
 
+/* Fan duty (%) per state; ALARM_GAS scales with the gas level */
+#define FAN_DRILL_PCT    50
+#define FAN_GAS_MIN_PCT  60
+#define FAN_FULL_PCT     100
+
 ZBUS_SUBSCRIBER_DEFINE(act_sub, 4);
 ZBUS_CHAN_ADD_OBS(chan_state, act_sub, 1);
 
 static const struct gpio_dt_spec relay = GPIO_DT_SPEC_GET(DT_ALIAS(fg_relay), gpios);
-static const struct gpio_dt_spec fan = GPIO_DT_SPEC_GET(DT_ALIAS(fg_fan), gpios);
-static const struct gpio_dt_spec buzzer = GPIO_DT_SPEC_GET(DT_ALIAS(fg_buzzer), gpios);
+static const struct pwm_dt_spec fan = PWM_DT_SPEC_GET(DT_ALIAS(fg_fan));
+static const struct pwm_dt_spec buzzer = PWM_DT_SPEC_GET(DT_ALIAS(fg_buzzer));
 static const struct gpio_dt_spec led_r = GPIO_DT_SPEC_GET(DT_ALIAS(fg_led_r), gpios);
 static const struct gpio_dt_spec led_g = GPIO_DT_SPEC_GET(DT_ALIAS(fg_led_g), gpios);
 static const struct gpio_dt_spec led_b = GPIO_DT_SPEC_GET(DT_ALIAS(fg_led_b), gpios);
 
 static atomic_t beep_req;
+static uint8_t fan_pct = 0xFF;   /* last applied duty, 0xFF = unknown */
+static bool buzzer_on = true;
 static struct fg_latency_stats lat;
 static struct k_spinlock lat_lock;
 
+static void set_fan(uint8_t pct)
+{
+	if (pct == fan_pct) {
+		return;
+	}
+	fan_pct = pct;
+	pwm_set_pulse_dt(&fan, (uint32_t)((uint64_t)fan.period * pct / 100U));
+}
+
+static void set_buzzer(bool on)
+{
+	if (on == buzzer_on) {
+		return;
+	}
+	buzzer_on = on;
+	/* passive buzzer: 50 % square wave tone; active buzzer: DC level */
+	uint32_t pulse = IS_ENABLED(CONFIG_FG_BUZZER_ACTIVE) ? buzzer.period : buzzer.period / 2;
+
+	pwm_set_pulse_dt(&buzzer, on ? pulse : 0);
+}
+
+/* Fan duty for the given state, scaled with the gas level in ALARM_GAS */
+static uint8_t fan_duty(enum fg_state s)
+{
+	if (s == FG_STATE_ALARM_FIRE) {
+		return FAN_FULL_PCT;
+	}
+	if (s == FG_STATE_DRILL) {
+		return FAN_DRILL_PCT;
+	}
+	if (s != FG_STATE_ALARM_GAS) {
+		return 0;
+	}
+
+	struct fg_adc_msg adc;
+	struct fg_config cfg;
+
+	/* never wait in the reaction path: full speed if data is busy */
+	if (zbus_chan_read(&chan_adc, &adc, K_NO_WAIT) != 0 ||
+	    zbus_chan_read(&chan_config, &cfg, K_NO_WAIT) != 0 || !adc.gas_ok) {
+		return FAN_FULL_PCT;
+	}
+	int32_t span = cfg.th_gas_danger_mv - cfg.th_gas_warn_mv;
+	int32_t pct = FAN_GAS_MIN_PCT +
+		      (adc.gas_mv - cfg.th_gas_warn_mv) * (FAN_FULL_PCT - FAN_GAS_MIN_PCT) / span;
+
+	return (uint8_t)CLAMP(pct, FAN_GAS_MIN_PCT, FAN_FULL_PCT);
+}
+
 int fg_act_init(void)
 {
-	const struct gpio_dt_spec *outs[] = {&relay, &fan, &buzzer, &led_r, &led_g, &led_b};
+	const struct gpio_dt_spec *outs[] = {&relay, &led_r, &led_g, &led_b};
 
 	for (size_t i = 0; i < ARRAY_SIZE(outs); i++) {
 		if (!gpio_is_ready_dt(outs[i])) {
@@ -42,6 +102,11 @@ int fg_act_init(void)
 		/* Safe default: relay de-energised (mains on), everything off */
 		gpio_pin_configure_dt(outs[i], GPIO_OUTPUT_INACTIVE);
 	}
+	if (!pwm_is_ready_dt(&fan) || !pwm_is_ready_dt(&buzzer)) {
+		return -ENODEV;
+	}
+	set_fan(0);
+	set_buzzer(false);
 	return 0;
 }
 
@@ -83,7 +148,7 @@ static void apply_power(const struct fg_state_msg *st)
 	bool alarm = fg_state_is_alarm(st->state);
 
 	gpio_pin_set_dt(&relay, alarm);   /* energised = mains cut */
-	gpio_pin_set_dt(&fan, alarm || st->state == FG_STATE_DRILL);
+	set_fan(fan_duty(st->state));
 }
 
 static void set_rgb(bool r, bool g, bool b)
@@ -164,7 +229,10 @@ static void render(const struct fg_state_msg *st, uint32_t t, uint32_t *beep_unt
 							 : left > 400;
 		}
 	}
-	gpio_pin_set_dt(&buzzer, buzz);
+	set_buzzer(buzz);
+	if (st->state == FG_STATE_ALARM_GAS) {
+		set_fan(fan_duty(st->state));
+	}
 }
 
 void fg_act_thread(void *p1, void *p2, void *p3)
@@ -185,13 +253,20 @@ void fg_act_thread(void *p1, void *p2, void *p3)
 	while (1) {
 		bool entered_alarm = false;
 
+		fg_rt_end(FG_TH_ACT);
 		fg_wdt_feed(FG_TH_ACT);
-		if (zbus_sub_wait(&act_sub, &chan, K_MSEC(TICK_MS)) == 0) {
+		fg_hang_point(FG_TH_ACT);
+		int woke = zbus_sub_wait(&act_sub, &chan, K_MSEC(TICK_MS));
+
+		fg_rt_begin(FG_TH_ACT, 0);
+		if (woke == 0) {
 			uint8_t prev = st.state;
 
 			if (zbus_chan_read(&chan_state, &st, FG_CHAN_READ_TIMEOUT) != 0) {
 				continue;
 			}
+			/* a state change is released when fusion published it */
+			fg_rt_set_release(FG_TH_ACT, st.decision_cyc);
 			apply_power(&st);
 			entered_alarm = fg_state_is_alarm(st.state) && !fg_state_is_alarm(prev);
 		}
