@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FireGuard-RT Monitor</title>
+  <meta name="description" content="Live monitoring and configuration for FireGuard-RT fire alarm nodes on CoreIoT.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%23e0492a' stroke-width='4'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23e0492a'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    /* apply the stored theme before first paint */
+    try {
+      var t = localStorage.getItem('fg.theme');
+      if (t) document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <!--
+    FireGuard-RT Monitor, design contract
+    WORLD: soft neumorphic instrument panel. One material, two depths:
+      raised panels hold content, pressed wells hold live readings and inputs.
+    COLOR: restrained neutrals; red-orange is reserved for alarm only.
+    TYPE: IBM Plex Sans for UI, IBM Plex Mono for measured values.
+    SIGNATURE: the state dial. Its ring carries the system state and pulses
+      only while an alarm is active; the whole shell picks up the alarm tint.
+  -->
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- Sign in -->
+  <section id="login-view" class="login" hidden>
+    <form id="login-form" class="login__panel raised" autocomplete="on" novalidate>
+      <div class="brand brand--large" aria-hidden="true">
+        <svg viewBox="0 0 32 32" class="brand__mark"><circle cx="16" cy="16" r="12.5"/><circle cx="16" cy="16" r="4"/></svg>
+      </div>
+      <h1 class="login__title">FireGuard-RT</h1>
+      <p class="login__lead">Sign in with your CoreIoT account to monitor and configure your fire alarm nodes.</p>
+
+      <label class="field">
+        <span class="field__label">CoreIoT server</span>
+        <input class="well" id="login-host" name="host" type="url" value="https://app.coreiot.io" spellcheck="false">
+      </label>
+      <div class="segmented segmented--small login__mode" role="radiogroup" aria-label="Sign-in method" id="login-mode">
+        <button class="segmented__item" type="button" role="radio" data-mode="password" aria-checked="true">Password</button>
+        <button class="segmented__item" type="button" role="radio" data-mode="token" aria-checked="false">Access token</button>
+      </div>
+
+      <div class="login__group" data-mode="password">
+        <label class="field">
+          <span class="field__label">Email</span>
+          <input class="well" id="login-user" name="username" type="email" autocomplete="username" spellcheck="false">
+        </label>
+        <label class="field">
+          <span class="field__label">Password</span>
+          <input class="well" id="login-pass" name="password" type="password" autocomplete="current-password">
+        </label>
+      </div>
+
+      <div class="login__group" data-mode="token" hidden>
+        <ol class="login__steps">
+          <li>Sign in to CoreIoT the way you usually do, including Google or GitHub.</li>
+          <li>Open <a class="link" id="token-link" href="https://app.coreiot.io/account/security" target="_blank" rel="noopener">Account, Security</a> and press <b>Copy JWT token</b>.</li>
+          <li>Paste it below.</li>
+        </ol>
+        <label class="field">
+          <span class="field__label">JWT token</span>
+          <textarea class="well login__token" id="login-token" rows="3" spellcheck="false" autocomplete="off" placeholder="eyJhbGciOi..."></textarea>
+        </label>
+        <details class="login__more">
+          <summary>Stay signed in longer</summary>
+          <p>A JWT token alone lasts about 2.5 hours. To renew it automatically, also paste the <code>refresh_token</code> value from the CoreIoT tab: Developer tools, Application, Local storage.</p>
+          <label class="field">
+            <span class="field__label">Refresh token (optional)</span>
+            <input class="well" id="login-refresh" type="password" spellcheck="false" autocomplete="off">
+          </label>
+        </details>
+      </div>
+
+      <p class="form-error" id="login-error" role="alert" hidden></p>
+      <button class="btn btn--primary" type="submit" id="login-submit">
+        <span class="btn__text">Sign in</span>
+      </button>
+      <p class="login__note">Credentials go only to the CoreIoT server. The session is kept in this browser tab until you close it or sign out.</p>
+    </form>
+  </section>
+
+  <!-- Application -->
+  <div id="app-view" class="shell" hidden>
+    <header class="topbar">
+      <a class="brand" href="#/overview" aria-label="FireGuard-RT overview">
+        <svg viewBox="0 0 32 32" class="brand__mark" aria-hidden="true"><circle cx="16" cy="16" r="12.5"/><circle cx="16" cy="16" r="4"/></svg>
+        <span class="brand__name">FireGuard<span class="brand__rt">RT</span></span>
+      </a>
+
+      <nav class="segmented" aria-label="Pages">
+        <a class="segmented__item" href="#/overview" data-route="overview">Overview</a>
+        <a class="segmented__item" href="#/history" data-route="history">History</a>
+        <a class="segmented__item" href="#/settings" data-route="settings">Settings</a>
+      </nav>
+
+      <div class="topbar__tools">
+        <label class="device-pick" title="Device">
+          <span class="conn-dot" id="conn-dot" aria-hidden="true"></span>
+          <span class="sr-only">Device</span>
+          <select id="device-select" class="device-pick__select"></select>
+        </label>
+        <button class="icon-btn raised" id="theme-toggle" type="button" aria-label="Switch theme"></button>
+        <button class="icon-btn raised" id="logout" type="button" aria-label="Sign out"></button>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <!-- Overview -->
+      <section class="page" id="page-overview" data-page="overview" hidden>
+        <div class="overview">
+          <section class="status raised" aria-labelledby="status-title">
+            <h2 class="sr-only" id="status-title">System state</h2>
+            <div class="dial" id="dial" data-state="UNKNOWN">
+              <svg class="dial__ring" viewBox="0 0 220 220" aria-hidden="true">
+                <circle class="dial__track" cx="110" cy="110" r="92"/>
+                <circle class="dial__arc" cx="110" cy="110" r="92"/>
+              </svg>
+              <div class="dial__face">
+                <span class="dial__state" id="dial-state">No data</span>
+                <span class="dial__cause" id="dial-cause"></span>
+              </div>
+            </div>
+            <dl class="status__meta">
+              <div><dt>Since</dt><dd id="meta-since">–</dd></div>
+              <div><dt>Last report</dt><dd id="meta-last">–</dd></div>
+              <div><dt>Device</dt><dd id="meta-device">–</dd></div>
+            </dl>
+            <p class="trapped" id="trapped" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.2"/><path d="M12 8v6m0 0-3 6m3-6 3 6M7 11l5-2 5 2"/></svg>
+              Person detected in the danger zone
+            </p>
+          </section>
+
+          <section class="readings raised" aria-labelledby="readings-title">
+            <header class="panel-head">
+              <h2 id="readings-title">Sensors</h2>
+              <span class="panel-head__aside" id="readings-age"></span>
+            </header>
+            <ul class="gauges" id="gauges"></ul>
+          </section>
+
+          <section class="outputs raised" aria-labelledby="outputs-title">
+            <header class="panel-head">
+              <h2 id="outputs-title">Response</h2>
+              <span class="panel-head__aside">derived from state</span>
+            </header>
+            <ul class="switches" id="switches"></ul>
+          </section>
+
+          <section class="health raised" aria-labelledby="health-title">
+            <header class="panel-head">
+              <h2 id="health-title">Sensor health</h2>
+            </header>
+            <ul class="health__list" id="health"></ul>
+          </section>
+
+          <section class="recent raised" aria-labelledby="recent-title">
+            <header class="panel-head">
+              <h2 id="recent-title">Recent events</h2>
+              <a class="link" href="#/history">All events</a>
+            </header>
+            <ol class="timeline" id="recent"></ol>
+          </section>
+        </div>
+      </section>
+
+      <!-- History -->
+      <section class="page" id="page-history" data-page="history" hidden>
+        <div class="page-head">
+          <h1>History</h1>
+          <div class="segmented segmented--small" role="radiogroup" aria-label="Time range" id="range">
+            <button class="segmented__item" type="button" role="radio" data-range="3600000">1 h</button>
+            <button class="segmented__item" type="button" role="radio" data-range="86400000">24 h</button>
+            <button class="segmented__item" type="button" role="radio" data-range="604800000">7 d</button>
+          </div>
+        </div>
+
+        <div class="charts">
+          <section class="chart raised" aria-labelledby="chart-air-title">
+            <header class="panel-head">
+              <h2 id="chart-air-title">Gas and light</h2>
+              <span class="panel-head__aside">mV, average per interval</span>
+            </header>
+            <div class="chart__well well"><canvas id="chart-air" aria-label="Gas and light history"></canvas></div>
+          </section>
+          <section class="chart raised" aria-labelledby="chart-climate-title">
+            <header class="panel-head">
+              <h2 id="chart-climate-title">Temperature and humidity</h2>
+              <span class="panel-head__aside">°C and %RH</span>
+            </header>
+            <div class="chart__well well"><canvas id="chart-climate" aria-label="Temperature and humidity history"></canvas></div>
+          </section>
+        </div>
+
+        <section class="events raised" aria-labelledby="events-title">
+          <header class="panel-head">
+            <h2 id="events-title">Event log</h2>
+            <div class="chips" id="event-filter" role="group" aria-label="Filter events">
+              <button type="button" class="chip" data-type="all" aria-pressed="true">All</button>
+              <button type="button" class="chip" data-type="state" aria-pressed="false">State</button>
+              <button type="button" class="chip" data-type="fault" aria-pressed="false">Faults</button>
+              <button type="button" class="chip" data-type="card" aria-pressed="false">Cards</button>
+              <button type="button" class="chip" data-type="trapped" aria-pressed="false">Presence</button>
+              <button type="button" class="chip" data-type="boot" aria-pressed="false">Boot</button>
+            </div>
+          </header>
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Detail</th><th scope="col" class="num">Boot</th><th scope="col" class="num">Seq</th></tr>
+              </thead>
+              <tbody id="events-body"></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <!-- Settings -->
+      <section class="page" id="page-settings" data-page="settings" hidden>
+        <div class="page-head">
+          <h1>Settings</h1>
+          <span class="page-head__aside" id="fw-version"></span>
+        </div>
+
+        <div class="settings">
+          <form class="config raised" id="config-form" novalidate>
+            <header class="panel-head">
+              <h2>Detection parameters</h2>
+              <span class="panel-head__aside">CoreIoT shared attributes</span>
+            </header>
+            <div class="config__groups" id="config-fields"></div>
+            <footer class="config__foot">
+              <p class="form-status" id="config-status" role="status"></p>
+              <button class="btn" type="button" id="config-reset">Revert</button>
+              <button class="btn btn--primary" type="submit" id="config-save" disabled>Save changes</button>
+            </footer>
+          </form>
+
+          <section class="drill raised" aria-labelledby="drill-title">
+            <header class="panel-head">
+              <h2 id="drill-title">Evacuation drill</h2>
+            </header>
+            <p class="drill__text">Runs the fan, the drill tone and the exit lights without cutting mains power. A real alarm always takes precedence. Alarms cannot be silenced remotely.</p>
+            <label class="field">
+              <span class="field__label">Duration <output id="drill-out" for="drill-duration">30 s</output></span>
+              <input type="range" id="drill-duration" min="5" max="600" step="5" value="30" class="slider">
+            </label>
+            <div class="drill__actions">
+              <button class="btn btn--primary" type="button" id="drill-start">Start drill</button>
+              <button class="btn" type="button" id="drill-stop">Stop</button>
+            </div>
+            <p class="form-status" id="drill-status" role="status"></p>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="assets/coreiot.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>

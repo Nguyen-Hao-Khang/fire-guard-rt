@@ -4,9 +4,9 @@
 
 | Thuộc tính | Giá trị |
 |---|---|
-| Phiên bản | 0.2 |
+| Phiên bản | 0.3 |
 | Nền tảng phần cứng | ESP32-WROOM-32 (NodeMCU 30 chân) |
-| Hệ điều hành | Zephyr RTOS 4.4, đa xử lý bất đối xứng (AMP) trên 2 nhân |
+| Hệ điều hành | Zephyr RTOS 4.4. Mục tiêu: đa xử lý bất đối xứng (AMP) trên 2 nhân |
 | Nền tảng IoT | CoreIoT (giao thức MQTT, mô hình dữ liệu ThingsBoard) |
 | Tiêu chuẩn tham chiếu | TCVN 5738:2021, Hệ thống báo cháy tự động – Yêu cầu kỹ thuật |
 
@@ -45,15 +45,15 @@ Hệ thống được thiết kế theo hướng **an toàn tới hạn** (safet
 | Thời gian phản ứng | Khoảng thời gian từ khi hệ thống chuyển sang ALARM đến khi relay, quạt và còi đều đã được kích hoạt |
 | Chu kỳ lấy mẫu (`sample_period`) | Khoảng thời gian giữa hai lần đọc cảm biến liên tiếp |
 | Chu kỳ gửi (`callin_period`) | Khoảng thời gian giữa hai lần gửi telemetry lên CoreIoT khi hệ thống ở trạng thái bình thường |
-| Lõi an toàn | Tập luồng phát hiện–ứng phó, chạy trên APP_CPU với kernel riêng |
-| Lõi truyền thông | Tập luồng Wi-Fi, MQTT và nhật ký, chạy trên PRO_CPU |
+| Lõi an toàn | Tập luồng phát hiện–ứng phó. Thiết kế mục tiêu đặt lõi này trên APP_CPU với kernel riêng |
+| Lõi truyền thông | Tập luồng Wi-Fi, MQTT và nhật ký. Thiết kế mục tiêu đặt lõi này trên PRO_CPU |
 | Chế độ suy giảm | Chế độ vận hành khi có ít nhất một cảm biến bị cô lập do lỗi |
 
 ### 1.4 Phần cứng
 
 | Thành phần | Vai trò | Giao tiếp | GPIO |
 |---|---|---|---|
-| ESP32 NodeMCU (30 chân) | Bộ xử lý trung tâm | — | — |
+| ESP32 NodeMCU (30 chân) | Bộ xử lý trung tâm | | |
 | Quang trở LDR | Phát hiện ánh sáng ngọn lửa (vai trò đầu báo lửa) | ADC1_CH7 | 35 |
 | MQ-2 | Phát hiện khói và khí gas (vai trò đầu báo khói/gas) | ADC1_CH6, qua phân áp | 34 |
 | DHT22 | Nhiệt độ, độ ẩm (vai trò đầu báo nhiệt) | 1-wire | 4 |
@@ -82,6 +82,8 @@ flowchart LR
   F -- kênh liên nhân --> T & L
   M <--> C[(CoreIoT)] <--> WEB[Web giám sát]
 ```
+
+Sơ đồ trên là kiến trúc mục tiêu. Phiên bản 0.1 của firmware chạy mọi luồng trên PRO_CPU vì driver Wi-Fi của Zephyr 4.4 chưa hỗ trợ SMP, và cách ly lõi an toàn với truyền thông bằng độ ưu tiên (xem [`architecture.md`](architecture.md#7-đơn-nhân-hiện-tại-và-hướng-amp)).
 
 Trong mỗi lõi, các luồng trao đổi dữ liệu qua kênh zbus. Giữa hai lõi, kênh liên nhân (IPM kết hợp bộ nhớ chia sẻ) chuyển tiếp các kênh zbus theo cơ chế không chặn: lõi an toàn không bao giờ chờ lõi truyền thông. Lệnh cấu hình từ xa được kiểm tra hợp lệ rồi mới áp dụng vào lõi an toàn.
 
@@ -112,10 +114,10 @@ Lỗi cảm biến được biểu diễn bằng cờ `FAULT` riêng cho từng 
 | NORMAL | Cấp điện | Tắt | Tắt | Xanh lá | Tắt |
 | NORMAL có FAULT | Cấp điện | Tắt | Bíp ngắn mỗi 30 s | Vàng nháy | Tắt |
 | PRE_ALARM | Cấp điện | Tắt | Bíp ngắn mỗi 5 s | Cam nháy | Tắt |
-| ALARM_FIRE | Ngắt | Bật | Liên tục | Đỏ / xanh lá xen kẽ | Quét |
-| ALARM_GAS | Ngắt | Bật | Ngắt quãng | Đỏ / xanh lá xen kẽ | Quét |
+| ALARM_FIRE | Ngắt | Bật 100 % | Liên tục | Đỏ / xanh lá xen kẽ | Quét |
+| ALARM_GAS | Ngắt | Bật 60–100 % theo nồng độ gas | Ngắt quãng | Đỏ / xanh lá xen kẽ | Quét |
 | ALARM, có người trong vùng | Ngắt | Bật | Như trên | Xen kẽ tần số cao | Quét |
-| DRILL | Cấp điện | Bật | Ngắt quãng ngắn | Tím nháy | Quét |
+| DRILL | Cấp điện | Bật 50 % | Ngắt quãng ngắn | Tím nháy | Quét |
 
 ---
 
@@ -205,10 +207,12 @@ flowchart LR
 
 ## 5. Giao diện dữ liệu CoreIoT
 
+Định dạng chi tiết của từng khoá và mã sự kiện: [`coreiot-web.md`](coreiot-web.md).
+
 | Loại | Topic | Nội dung |
 |---|---|---|
 | Telemetry | `v1/devices/me/telemetry` | `{"state","light","gas","temp","hum","faults","trapped"}` |
-| Sự kiện | `v1/devices/me/telemetry` | `{"event","detail","a","b","seq","uptime_ms"}` |
+| Sự kiện | `v1/devices/me/telemetry` | `{"event","detail","a","b","seq","boot","uptime_ms"}` |
 | Client attributes | `v1/devices/me/attributes` | `fw_version`, `device`, `cfg_<khóa>` (kết quả áp dụng cấu hình) |
 | Shared attributes | `v1/devices/me/attributes` (nhận) | `sample_period_ms`, `callin_period_s`, `th_light_delta_mv`, `th_gas_rise_mv`, `th_gas_warn_mv`, `th_gas_danger_mv`, `th_temp_max_x10`, `th_temp_rise_x10`, `confirm_window_ms` |
 | RPC | `v1/devices/me/rpc/request/+` | `startDrill` (`duration_s`), `stopDrill` |
