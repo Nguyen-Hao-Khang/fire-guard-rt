@@ -1,21 +1,23 @@
-# Contributing
+# Đóng góp
 
-## Branches
+Tài liệu này quy định cách nhóm đặt tên nhánh, viết commit, viết comment và mở pull request cho FireGuard-RT.
 
-`main` is always buildable. Work happens on short-lived branches, merged through a pull request.
+## 1. Nhánh
 
-Branch name: `<owner>/<task>`
+`main` luôn build được. Mỗi việc làm trên một nhánh ngắn hạn và vào `main` qua pull request.
 
-| Part | Rule |
+Tên nhánh: `<người-phụ-trách>/<việc>`
+
+| Phần | Quy tắc |
 |---|---|
-| `owner` | Handle of the member responsible for the task, e.g. `khangnh` |
-| `task` | Feature or task being implemented: 2 to 5 lowercase words, kebab-case, ASCII only |
+| `người-phụ-trách` | Tên định danh của thành viên chịu trách nhiệm, ví dụ `khangnh` |
+| `việc` | Tính năng hoặc việc đang làm: 2 đến 5 từ tiếng Anh viết thường, nối bằng dấu gạch ngang, chỉ ký tự ASCII |
 
-Examples: `khangnh/coreiot-rpc`, `khangnh/rfid-card-debounce`, `khangnh/fusion-degraded-tests`.
+Ví dụ: `khangnh/coreiot-rpc`, `khangnh/rfid-card-debounce`, `khangnh/fusion-degraded-tests`.
 
-## Commits
+## 2. Commit
 
-Format: [Conventional Commits](https://www.conventionalcommits.org/).
+Commit theo [Conventional Commits](https://www.conventionalcommits.org/), viết bằng tiếng Anh:
 
 ```
 <type>(<scope>): <summary>
@@ -25,12 +27,23 @@ Format: [Conventional Commits](https://www.conventionalcommits.org/).
 Refs: <issue or work item>
 ```
 
-- Summary: imperative mood, lowercase, no trailing period, at most 50 characters.
-- Body: optional; explain the reason for the change, not the diff.
-- One logical change per commit. The tree must build after every commit.
-- English only, ASCII only.
+- `summary`: thể mệnh lệnh, chữ thường, không dấu chấm cuối, tối đa 50 ký tự.
+- `body`: tuỳ chọn, giải thích lý do thay đổi thay vì kể lại diff.
+- Mỗi commit chứa một thay đổi logic. Cây mã phải build được sau mỗi commit.
+- Chỉ dùng ký tự ASCII.
 
-Examples:
+| `type` | Dùng khi |
+|---|---|
+| `feat` | Thêm tính năng |
+| `fix` | Sửa lỗi |
+| `test` | Thêm hoặc sửa test |
+| `docs` | Chỉ đổi tài liệu |
+| `build` | Đổi hệ thống build, Kconfig, CI, mô phỏng |
+| `refactor` | Đổi cấu trúc mã, không đổi hành vi |
+
+Scope thường dùng: `fusion`, `sensors`, `rfid`, `actuators`, `safety`, `storage`, `rt`, `comm`, `web`, `sim`.
+
+Ví dụ:
 
 ```
 feat(fusion): confirm flame with smoke or heat rise
@@ -39,18 +52,28 @@ test(fusion): cover degraded mode without LDR
 build(sim): generate wokwi flash image after link
 ```
 
-## Code comments
+## 3. Comment trong mã
 
-- English, short, state the intent or constraint. Do not restate the code.
-- Use `/* */` blocks; file header is one line describing the module, then details if needed.
-- No decorative separators, banners or long dash lines.
-- `TODO(<scope>): <action>` for planned work.
+- Viết bằng tiếng Anh, ngắn, nêu ý định hoặc ràng buộc thay vì lặp lại mã.
+- Dùng khối `/* */`. Đầu file có một dòng mô tả module, thêm chi tiết bên dưới khi cần.
+- Không dùng dòng trang trí, banner hay dãy gạch ngang dài.
+- Việc dự định làm: `TODO(<scope>): <action>`.
 
-## Before opening a pull request
+## 4. Pull request
 
-```
+Trước khi mở pull request, chạy:
+
+```sh
 west build -p -b esp32_devkitc/esp32/procpu -- "-DEXTRA_CONF_FILE=sim.conf"
 west twister -T tests -p native_sim/native/64
 ```
 
-Pushing to the remote is done by the repository owner.
+Quy trình:
+
+1. Cập nhật `main` và tạo nhánh mới từ đó.
+2. Commit theo mục 2, push nhánh của bạn lên GitHub.
+3. Mở pull request vào `main`. Mô tả nêu việc đã làm, cách kiểm thử, kịch bản kiểm thử liên quan.
+4. Chờ CI xanh và ít nhất một thành viên khác review.
+5. Chủ repository merge. Xoá nhánh sau khi merge.
+
+Không commit `secrets.conf`, thư mục `build/` hay file cá nhân của IDE. `.gitignore` đã chặn các file này.
