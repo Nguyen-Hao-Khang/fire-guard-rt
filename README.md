@@ -86,6 +86,7 @@ fire_guard_rt/
 | [`docs/coreiot-web.md`](docs/coreiot-web.md) | Thiết lập CoreIoT, giao thức dữ liệu, giao diện web |
 | [`docs/wiring.md`](docs/wiring.md) | Đấu nối phần cứng thật |
 | [`docs/SRS.md`](docs/SRS.md) | Đặc tả yêu cầu: FR, NFR, use case |
+| [`docs/test-plan.md`](docs/test-plan.md) | Kế hoạch kiểm thử: tiêu chí, quy trình báo lỗi, kịch bản chi tiết |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | Quy ước nhánh, commit, pull request |
 
 ## Kiểm thử
@@ -97,6 +98,8 @@ west twister -T tests -p native_sim/native/64
 ```
 
 `tests/fusion` kiểm tra luật phát hiện và máy trạng thái; `tests/storage` kiểm tra việc lưu cấu hình và nhật ký qua lần khởi động lại.
+
+Kiểm thử hệ thống trên Wokwi, phần cứng, CoreIoT và web theo [`docs/test-plan.md`](docs/test-plan.md). Kịch bản không đạt được báo bằng GitHub Issue theo mẫu *Test failure*.
 
 Workflow `pages` đưa thư mục `web/` lên GitHub Pages mỗi khi `main` có thay đổi trong `web/`.
 
