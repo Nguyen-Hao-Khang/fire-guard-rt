@@ -11,7 +11,7 @@ Nút báo cháy tự động chạy Zephyr RTOS trên ESP32. FireGuard-RT tổng
 | Board target | `esp32_devkitc/esp32/procpu` |
 | Mô phỏng | Wokwi for VS Code |
 | Nền tảng IoT | CoreIoT (ThingsBoard 4.2, MQTT) |
-| Giao diện web | HTML, CSS, JavaScript tĩnh trong `web/` |
+| Giao diện web | [nguyen-hao-khang.github.io/fire-guard-rt](https://nguyen-hao-khang.github.io/fire-guard-rt/), mã nguồn trong `web/` |
 
 ## Tính năng
 
@@ -90,7 +90,7 @@ fire_guard_rt/
 
 ## Kiểm thử
 
-GitHub Actions build ba cấu hình (mô phỏng, phần cứng, phần cứng kèm CoreIoT) và chạy unit test trên mỗi pull request và mỗi lần push lên `main`. Chạy unit test tại máy (Linux hoặc WSL):
+Workflow `build` của GitHub Actions build ba cấu hình (mô phỏng, phần cứng, phần cứng kèm CoreIoT) và chạy unit test trên mỗi pull request và mỗi lần push lên `main`. Chạy unit test tại máy (Linux hoặc WSL):
 
 ```sh
 west twister -T tests -p native_sim/native/64
@@ -98,13 +98,15 @@ west twister -T tests -p native_sim/native/64
 
 `tests/fusion` kiểm tra luật phát hiện và máy trạng thái; `tests/storage` kiểm tra việc lưu cấu hình và nhật ký qua lần khởi động lại.
 
+Workflow `pages` đưa thư mục `web/` lên GitHub Pages mỗi khi `main` có thay đổi trong `web/`.
+
 ## Trạng thái dự án
 
 | Hạng mục | Trạng thái |
 |---|---|
 | Firmware đơn nhân (UP), mô phỏng Wokwi | Hoàn thành |
 | Lưu trữ flash, PWM, CI, đo thời gian thực | Hoàn thành, đang kiểm thử |
-| Giao diện web | Hoàn thành, đang kiểm thử |
+| Giao diện web, trang hướng dẫn, GitHub Pages | Hoàn thành, đang kiểm thử |
 | Chạy trên phần cứng thật, đo số liệu chính thức | Chưa thực hiện |
 | Tách lõi an toàn sang APP_CPU (AMP) | Kế hoạch |
 

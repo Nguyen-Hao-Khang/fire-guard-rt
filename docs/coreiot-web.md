@@ -108,12 +108,13 @@ Thiết bị trả `{"result":"ok"}` hoặc `{"result":"rejected"}`. CoreIoT tr�
 
 ### 5.1 Chạy
 
-Giao diện là trang tĩnh, không cần build. Chọn một trong hai cách:
+Giao diện là trang tĩnh, không cần build. Chọn một trong ba cách:
 
+- Mở bản đang chạy tại [https://nguyen-hao-khang.github.io/fire-guard-rt/](https://nguyen-hao-khang.github.io/fire-guard-rt/).
 - Mở `web/index.html` bằng trình duyệt.
 - Phục vụ thư mục bằng máy chủ tĩnh bất kỳ, ví dụ `python -m http.server 8080 --directory web`, rồi mở `http://localhost:8080`.
 
-Trang cần Internet để tải phông chữ và Chart.js 4.4.1 từ CDN. Bạn có thể đưa thư mục `web/` lên GitHub Pages hoặc bất kỳ dịch vụ host tĩnh nào; CoreIoT cho phép gọi API từ domain khác.
+Trang cần Internet để tải phông chữ và Chart.js 4.4.1 từ CDN. Workflow `.github/workflows/pages.yml` đưa thư mục `web/` lên GitHub Pages mỗi khi một commit thay đổi `web/` vào `main`; bạn cũng chạy tay được từ tab Actions (`pages` > *Run workflow*). Trang chỉ chứa mã giao diện, không chứa token hay mật khẩu: mỗi người đăng nhập bằng tài khoản CoreIoT của mình. CoreIoT cho phép gọi API từ domain khác, nên bạn cũng đưa được `web/` lên dịch vụ host tĩnh khác.
 
 ### 5.2 Đăng nhập
 
