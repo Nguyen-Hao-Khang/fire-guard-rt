@@ -3,6 +3,7 @@
   'use strict';
 
   var Api = CoreIoT.Api;
+  var CFG = window.FG_CONFIG || {};
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
@@ -136,6 +137,7 @@
   /* Sign in */
   function showLogin(message) {
     stopLive();
+    document.body.classList.remove('is-guest', 'is-alarm');
     $('#app-view').hidden = true;
     $('#login-view').hidden = false;
     $('#login-host').value = Api.host;
@@ -144,6 +146,18 @@
     err.textContent = message || '';
     setLoginMode(loginMode());
     syncTokenLink();
+    $('#login-guest').hidden = !CFG.publicId;
+  }
+
+  function onGuest() {
+    var btn = $('#login-guest'), err = $('#login-error');
+    var host = $('#login-host').value.trim() || CFG.host;
+    err.hidden = true;
+    busy(btn, true);
+    Api.loginPublic(host, CFG.publicId).then(startApp, function (e) {
+      err.textContent = e.message;
+      err.hidden = false;
+    }).finally(function () { busy(btn, false); });
   }
 
   function loginMode() {
@@ -225,16 +239,22 @@
 
   function startApp() {
     watchExpiry();
+    document.body.classList.toggle('is-guest', Api.guest);
+    $('#guest-badge').hidden = !Api.guest;
+    $('#logout').setAttribute('aria-label', Api.guest ? 'Leave guest view' : 'Sign out');
     $('#login-view').hidden = true;
     $('#app-view').hidden = false;
     var ready = Api.user ? Promise.resolve(Api.user) : Api.me();
     ready.then(function () { return Api.devices(); }).then(function (list) {
+      /* guests see every public device of the tenant; keep the alarm nodes */
+      var fg = list.filter(function (d) { return /fireguard/i.test(d.name); });
+      if (Api.guest && fg.length) list = fg;
       S.devices = list;
       var sel = $('#device-select');
       if (!list.length) {
         sel.innerHTML = '<option>No devices</option>';
         sel.disabled = true;
-        toast('This account has no devices yet.', true);
+        toast(Api.guest ? 'No device is shared for guests yet.' : 'This account has no devices yet.', true);
         return;
       }
       sel.disabled = false;
@@ -290,10 +310,12 @@
 
   function loadAttributes() {
     var id = S.device.id.id;
+    /* a scope the user may not read leaves the defaults in place */
+    var skip = function () { /* not readable */ };
     return Promise.all([
-      Api.attributes(id, 'SHARED_SCOPE').then(function (a) { S.shared = a; }),
-      Api.attributes(id, 'CLIENT_SCOPE').then(function (a) { S.client = a; }),
-      Api.attributes(id, 'SERVER_SCOPE').then(function (a) { S.server = a; })
+      Api.attributes(id, 'SHARED_SCOPE').then(function (a) { S.shared = a; }, skip),
+      Api.attributes(id, 'CLIENT_SCOPE').then(function (a) { S.client = a; }, skip),
+      Api.attributes(id, 'SERVER_SCOPE').then(function (a) { S.server = a; }, skip)
     ]);
   }
 
@@ -726,7 +748,8 @@
   /* Router */
   function currentRoute() {
     var r = (location.hash || '').replace(/^#\/?/, '');
-    return ['overview', 'history', 'settings'].indexOf(r) >= 0 ? r : 'overview';
+    var pages = Api.guest ? ['overview', 'history'] : ['overview', 'history', 'settings'];
+    return pages.indexOf(r) >= 0 ? r : 'overview';
   }
 
   function route() {
@@ -747,6 +770,7 @@
   /* Wiring */
   function init() {
     $('#login-form').addEventListener('submit', onLogin);
+    $('#login-guest').addEventListener('click', onGuest);
     $$('#login-mode [data-mode]').forEach(function (b) {
       b.addEventListener('click', function () { setLoginMode(b.dataset.mode); $('#login-error').hidden = true; });
     });

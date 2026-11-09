@@ -374,6 +374,14 @@ body.is-alarm .switch[data-on="true"] .switch__icon { color: var(--alarm); }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
 
+/* Guest view */
+.login__or { display: grid; }
+.login__or .btn { width: 100%; }
+.guest-badge { font-size: var(--t-xs); color: var(--ink-2); padding: 6px 12px; border-radius: var(--r-pill); box-shadow: var(--press-sm); }
+body.is-guest .topbar [data-route="settings"],
+body.is-guest .help-link[href$="#settings"],
+body.is-guest .help-link[href$="#drill"] { display: none; }
+
 /* Help page */
 .help { display: grid; grid-template-columns: 240px minmax(0, 860px); justify-content: center; gap: var(--s5); align-items: start; }
 .help__toc { position: sticky; top: var(--s5); padding: var(--s5); font-size: var(--t-sm); }

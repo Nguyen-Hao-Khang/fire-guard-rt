@@ -122,8 +122,27 @@ Trang cần Internet để tải phông chữ và Chart.js 4.4.1 từ CDN. Workf
 |---|---|---|
 | **Password** | Tài khoản CoreIoT có mật khẩu | Nhập email và mật khẩu |
 | **Access token** | Tài khoản đăng nhập bằng Google hoặc GitHub | Trên CoreIoT, vào **Account** > **Security**, bấm **Copy JWT token**, dán vào trang |
+| **View as guest** | Người chỉ cần xem, không có tài khoản | Bấm nút trên màn hình đăng nhập. Chỉ có Overview và History |
 
 JWT có hiệu lực khoảng 2,5 giờ. Trang báo trước 5 phút và đưa bạn về màn hình đăng nhập khi token hết hạn. Để trang tự gia hạn, mở mục *Stay signed in longer* và dán thêm giá trị `refresh_token` lấy từ tab CoreIoT (DevTools > Application > Local storage).
+
+Mỗi người đăng nhập bằng tài khoản của chính mình. Đừng gửi JWT của bạn cho người khác: JWT mang toàn bộ quyền của tài khoản đó.
+
+#### Chế độ khách
+
+Chế độ khách đăng nhập bằng customer *Public* của tenant (`POST /api/auth/login/public`) và chỉ thấy các device đã được chia sẻ công khai. Để bật:
+
+1. Trên CoreIoT, vào **Entities** > **Devices**, chọn device, thêm nó vào nhóm device công khai (nhóm `PublicDevice`) hoặc bấm **Make public**.
+2. Đặt `publicId` trong `web/assets/config.js` bằng id của customer *Public* (**Customers** > *Public* > sao chép id). Để trống thì nút **View as guest** bị ẩn.
+
+Khách xem được số đo, trạng thái và lịch sử của device công khai. Khách không thấy trang Settings và không gửi được lệnh diễn tập. Bất kỳ ai có đường dẫn trang web cũng xem được dữ liệu của device đã công khai.
+
+#### Tài khoản cho thành viên
+
+Mỗi email trên CoreIoT chỉ thuộc một tenant. Email đã đăng ký CoreIoT trước đó không thêm được vào tenant khác. Thành viên có hai cách:
+
+- Dùng tài khoản riêng, tạo device riêng trong tenant của mình và dán access token của device đó vào `secrets.conf`. Trang web làm việc với bất kỳ tenant nào, nên mỗi người tự kiểm thử với device của mình.
+- Nếu cần thao tác trên device chung, chủ tenant thêm thành viên bằng một email chưa đăng ký CoreIoT (**Users** > **Tenant Administrators** > **+**, chọn *Display activation link* rồi gửi link cho thành viên tự đặt mật khẩu).
 
 Trang giữ token trong `sessionStorage` của tab: đóng tab hoặc bấm đăng xuất sẽ xoá phiên. Trình duyệt nhớ server, device đã chọn, cách đăng nhập và giao diện sáng/tối trong `localStorage`.
 
@@ -145,7 +164,8 @@ Trang Settings kiểm tra giá trị chặt hơn firmware một chút để trá
 | `web/index.html` | Cấu trúc ba trang và màn hình đăng nhập |
 | `web/help.html`, `web/assets/help.js` | Trang hướng dẫn sử dụng |
 | `web/assets/style.css` | Design token cho hai giao diện sáng và tối, bố cục responsive |
-| `web/assets/coreiot.js` | Lớp gọi REST, WebSocket, đăng nhập, gia hạn token |
+| `web/assets/config.js` | Máy chủ mặc định và `publicId` cho chế độ khách |
+| `web/assets/coreiot.js` | Lớp gọi REST, WebSocket, đăng nhập (mật khẩu, JWT, khách), gia hạn token |
 | `web/assets/app.js` | Router, giải mã sự kiện, vẽ biểu đồ, form cấu hình |
 
 Mỗi khi firmware đổi khoá telemetry, mã sự kiện hoặc miền cấu hình, cập nhật các bảng `STATES`, `CAUSES`, `SENSORS` và `CONFIG` ở đầu `app.js` cho khớp, và sửa các mục tương ứng trong `help.html`.

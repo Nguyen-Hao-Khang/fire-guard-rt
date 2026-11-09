@@ -26,8 +26,11 @@
     }
   }
 
+  var CFG = global.FG_CONFIG || {};
+
   var Api = {
-    host: store.get('fg.host') || 'https://app.coreiot.io',
+    host: store.get('fg.host') || CFG.host || 'https://app.coreiot.io',
+    guest: store.get('fg.guest') === '1',
     token: store.get('fg.token'),
     refreshToken: store.get('fg.refresh'),
     user: null,
@@ -53,8 +56,31 @@
       this.token = null;
       this.refreshToken = null;
       this.user = null;
+      this.guest = false;
       store.del('fg.token');
       store.del('fg.refresh');
+      store.del('fg.guest');
+    },
+
+    /* read-only session as the tenant's Public customer; needs no account */
+    loginPublic: function (host, publicId) {
+      this.setHost(host);
+      var self = this;
+      return fetch(this.host + '/api/auth/login/public', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ publicId: publicId })
+      }).then(function (r) {
+        if (!r.ok) throw new ApiError(r.status, 'Guest viewing is not available on this server.');
+        return r.json();
+      }, function () {
+        throw new ApiError(0, 'Cannot reach ' + self.host + '. Check your connection.');
+      }).then(function (t) {
+        self.saveTokens(t);
+        self.guest = true;
+        store.set('fg.guest', '1');
+        return self.me();
+      });
     },
 
     login: function (host, username, password) {
@@ -150,6 +176,11 @@
 
     me: function () {
       var self = this;
+      /* the public user has no profile; /api/auth/user fails for it */
+      if (this.guest) {
+        this.user = { authority: 'PUBLIC' };
+        return Promise.resolve(this.user);
+      }
       return this.request('GET', '/api/auth/user').then(function (u) {
         self.user = u;
         return u;
@@ -157,6 +188,10 @@
     },
 
     devices: function () {
+      if (this.guest) {
+        return this.request('GET', '/api/user/devices?pageSize=100&page=0&sortProperty=name&sortOrder=ASC')
+          .then(function (p) { return p.data || []; });
+      }
       var u = this.user || {};
       var path = u.authority === 'CUSTOMER_USER' && u.customerId
         ? '/api/customer/' + u.customerId.id + '/devices?pageSize=100&page=0&sortProperty=name&sortOrder=ASC'
