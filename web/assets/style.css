@@ -111,6 +111,7 @@ button, input, select { font: inherit; color: inherit; }
 /* Buttons */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  text-decoration: none;
   min-height: 42px; padding: 0 var(--s5);
   border: 0; border-radius: var(--r-pill);
   background: var(--surface); color: var(--ink-2); font-weight: 500;
@@ -371,4 +372,52 @@ body.is-alarm .switch[data-on="true"] .switch__icon { color: var(--alarm); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
+
+/* Help page */
+.help { display: grid; grid-template-columns: 240px minmax(0, 860px); justify-content: center; gap: var(--s5); align-items: start; }
+.help__toc { position: sticky; top: var(--s5); padding: var(--s5); font-size: var(--t-sm); }
+.help__toc-title { color: var(--ink-3); font-size: var(--t-xs); margin-bottom: var(--s3); }
+.help__toc ol { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; color: var(--ink-3); }
+.help__toc a { color: var(--ink-2); text-decoration: none; }
+.help__toc a:hover, .help__toc a[aria-current="true"] { color: var(--ink); }
+.help__toc a[aria-current="true"] { font-weight: 600; }
+.help__body { padding: var(--s6) var(--s6) var(--s7); }
+.help__body:focus { outline: none; }
+.help__body h1 { font-size: var(--t-2xl); margin-bottom: var(--s4); }
+.help__body h2 { font-size: var(--t-lg); margin: var(--s7) 0 var(--s3); scroll-margin-top: var(--s5); }
+.help__body section { scroll-margin-top: var(--s5); }
+.help__body p, .help__body li { color: var(--ink-2); line-height: 1.65; max-width: 68ch; }
+.help__body p { margin: 0 0 var(--s3); }
+.help__body b { color: var(--ink); font-weight: 600; }
+.help__body ul, .help__body ol { margin: 0 0 var(--s4); padding-left: 1.3em; display: grid; gap: 6px; }
+.help__body code { font-family: var(--mono); font-size: 0.9em; }
+.help__lead { font-size: var(--t-md); }
+.help__legend { list-style: none; padding-left: 0 !important; }
+.help__legend li { display: block; }
+.help__dot { display: inline-block; width: 9px; height: 9px; margin-right: var(--s2); border-radius: 50%; background: var(--c); transform: translateY(-1px); }
+.help__ring { display: inline-block; width: 28px; height: 28px; border-radius: 50%; border: 5px solid var(--c); box-shadow: var(--raise-sm); vertical-align: middle; }
+.help__table { width: 100%; border-collapse: collapse; margin: var(--s2) 0 var(--s4); font-size: var(--t-sm); }
+.help__table th { text-align: left; color: var(--ink-3); font-weight: 500; font-size: var(--t-xs); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--line); }
+.help__table td { padding: var(--s3); border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink-2); line-height: 1.55; }
+.help__table td:first-child { color: var(--ink); font-weight: 500; white-space: nowrap; }
+.help__table .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.help__callout { padding: var(--s4) var(--s5); border-radius: var(--r-md); background: var(--alarm-soft); margin-bottom: var(--s4); }
+.help__callout p { margin: 0; color: var(--ink); }
+.help__steps li::marker { color: var(--ink-3); font-family: var(--mono); }
+.help__faq { padding: var(--s3) var(--s4); border-radius: var(--r-md); box-shadow: var(--press-sm); margin-bottom: var(--s3); }
+.help__faq summary { cursor: pointer; color: var(--ink); font-weight: 500; }
+.help__faq p { margin: var(--s3) 0 0; }
+.help__foot { margin-top: var(--s7) !important; font-size: var(--t-xs); color: var(--ink-3) !important; }
+.help-link { font-size: var(--t-xs); color: var(--ink-3); text-decoration: none; border-bottom: 1px solid var(--line); }
+.help-link:hover { color: var(--ink); }
+
+@media (max-width: 900px) {
+  .help { grid-template-columns: minmax(0, 1fr); }
+  .help__toc { position: static; }
+  .help__body { padding: var(--s5) var(--s4) var(--s6); }
+}
+@media (max-width: 720px) {
+  .help__table td:first-child { white-space: normal; }
+  .help__body h1 { font-size: var(--t-xl); }
 }

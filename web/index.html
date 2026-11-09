@@ -85,6 +85,7 @@
         <span class="btn__text">Sign in</span>
       </button>
       <p class="login__note">Credentials go only to the CoreIoT server. The session is kept in this browser tab until you close it or sign out.</p>
+      <p class="login__note"><a class="link" href="help.html">How to use this panel</a></p>
     </form>
   </section>
 
@@ -108,6 +109,9 @@
           <span class="sr-only">Device</span>
           <select id="device-select" class="device-pick__select"></select>
         </label>
+        <a class="icon-btn raised" href="help.html" aria-label="Help" title="Help">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.2-2.4 3.6M12 17h.01"/></svg>
+        </a>
         <button class="icon-btn raised" id="theme-toggle" type="button" aria-label="Switch theme"></button>
         <button class="icon-btn raised" id="logout" type="button" aria-label="Sign out"></button>
       </div>
@@ -159,6 +163,7 @@
           <section class="health raised" aria-labelledby="health-title">
             <header class="panel-head">
               <h2 id="health-title">Sensor health</h2>
+              <a class="help-link" href="help.html#health">About faults</a>
             </header>
             <ul class="health__list" id="health"></ul>
           </section>
@@ -235,7 +240,7 @@
           <form class="config raised" id="config-form" novalidate>
             <header class="panel-head">
               <h2>Detection parameters</h2>
-              <span class="panel-head__aside">CoreIoT shared attributes</span>
+              <a class="help-link" href="help.html#settings">What these settings mean</a>
             </header>
             <div class="config__groups" id="config-fields"></div>
             <footer class="config__foot">
@@ -248,6 +253,7 @@
           <section class="drill raised" aria-labelledby="drill-title">
             <header class="panel-head">
               <h2 id="drill-title">Evacuation drill</h2>
+              <a class="help-link" href="help.html#drill">How drills work</a>
             </header>
             <p class="drill__text">Runs the fan, the drill tone and the exit lights without cutting mains power. A real alarm always takes precedence. Alarms cannot be silenced remotely.</p>
             <label class="field">

@@ -133,6 +133,7 @@ Trang giữ token trong `sessionStorage` của tab: đóng tab hoặc bấm đă
 | **Overview** | Vòng trạng thái kèm nguyên nhân và thời điểm chuyển; bốn số đo so với ngưỡng; đáp ứng của relay, quạt, còi, đèn suy ra từ trạng thái; sức khoẻ năm cảm biến; cảnh báo có người trong vùng nguy hiểm; tám sự kiện gần nhất. Cập nhật qua WebSocket, không cần tải lại trang. Khi báo động, nền trang và tiêu đề tab đổi theo. |
 | **History** | Biểu đồ gas và ánh sáng, nhiệt độ và độ ẩm trong 1 giờ, 24 giờ hoặc 7 ngày (giá trị trung bình theo khoảng 1 phút, 15 phút, 2 giờ). Bảng nhật ký sự kiện lọc theo loại. |
 | **Settings** | Sửa chín tham số ở mục 3, kèm kết quả `applied`/`rejected` thiết bị trả về và phiên bản firmware. Bắt đầu hoặc dừng diễn tập. |
+| **Help** (`help.html`) | Hướng dẫn cho người dùng cuối: đọc trạng thái, việc cần làm khi có báo động, ý nghĩa từng số đo, sự kiện và tham số, chạy diễn tập, câu hỏi thường gặp. Mở được cả khi chưa đăng nhập, từ nút dấu hỏi trên thanh trên cùng hoặc liên kết ở màn hình đăng nhập. |
 
 Trang Settings kiểm tra giá trị chặt hơn firmware một chút để tránh nhập nhầm: ngưỡng mV tối đa 3300, nhiệt độ tối đa 125 °C. Nếu shared attribute trên CoreIoT đang vượt các mức này, ô tương ứng báo lỗi và nút Save bị khoá cho tới khi bạn sửa.
 
@@ -141,8 +142,9 @@ Trang Settings kiểm tra giá trị chặt hơn firmware một chút để trá
 | File | Nội dung |
 |---|---|
 | `web/index.html` | Cấu trúc ba trang và màn hình đăng nhập |
+| `web/help.html`, `web/assets/help.js` | Trang hướng dẫn sử dụng |
 | `web/assets/style.css` | Design token cho hai giao diện sáng và tối, bố cục responsive |
 | `web/assets/coreiot.js` | Lớp gọi REST, WebSocket, đăng nhập, gia hạn token |
 | `web/assets/app.js` | Router, giải mã sự kiện, vẽ biểu đồ, form cấu hình |
 
-Mỗi khi firmware đổi khoá telemetry, mã sự kiện hoặc miền cấu hình, cập nhật các bảng `STATES`, `CAUSES`, `SENSORS` và `CONFIG` ở đầu `app.js` cho khớp.
+Mỗi khi firmware đổi khoá telemetry, mã sự kiện hoặc miền cấu hình, cập nhật các bảng `STATES`, `CAUSES`, `SENSORS` và `CONFIG` ở đầu `app.js` cho khớp, và sửa các mục tương ứng trong `help.html`.
