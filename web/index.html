@@ -84,7 +84,10 @@
       <button class="btn btn--primary" type="submit" id="login-submit">
         <span class="btn__text">Sign in</span>
       </button>
-      <p class="login__note">Credentials go only to the CoreIoT server. The session is kept in this browser tab until you close it or sign out.</p>
+      <div class="login__or" id="login-guest-wrap">
+        <button class="btn" type="button" id="login-guest" hidden>View as guest</button>
+      </div>
+      <p class="login__note">Guests can watch the device without an account but cannot change settings or start drills. Credentials go only to the CoreIoT server. The session is kept in this browser tab until you close it or sign out.</p>
       <p class="login__note"><a class="link" href="help.html">How to use this panel</a></p>
     </form>
   </section>
@@ -104,6 +107,7 @@
       </nav>
 
       <div class="topbar__tools">
+        <span class="guest-badge" id="guest-badge" hidden>Guest view</span>
         <label class="device-pick" title="Device">
           <span class="conn-dot" id="conn-dot" aria-hidden="true"></span>
           <span class="sr-only">Device</span>
@@ -274,6 +278,7 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="assets/config.js"></script>
   <script src="assets/coreiot.js"></script>
   <script src="assets/app.js"></script>
 </body>
