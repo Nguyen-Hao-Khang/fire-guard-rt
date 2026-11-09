@@ -1,0 +1,73 @@
+name: Test failure
+description: A test scenario from docs/test-plan.md did not pass
+title: "[<scenario id>] <short description>"
+labels: ["bug"]
+body:
+  - type: input
+    id: scenario
+    attributes:
+      label: Scenario
+      description: ID from docs/test-plan.md, for example B4 or J5
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: Output of git log --oneline -1
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Wokwi
+        - Hardware
+        - Web
+        - CoreIoT
+        - Unit test
+        - CI
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: See docs/test-plan.md, section 5
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: What you did, including any deviation from the scenario
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log
+      description: Serial output or browser console around the failure
+      render: text
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots and notes

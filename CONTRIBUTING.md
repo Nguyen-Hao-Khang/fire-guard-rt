@@ -59,7 +59,11 @@ build(sim): generate wokwi flash image after link
 - Không dùng dòng trang trí, banner hay dãy gạch ngang dài.
 - Việc dự định làm: `TODO(<scope>): <action>`.
 
-## 4. Pull request
+## 4. Báo lỗi
+
+Khi một kịch bản trong [`docs/test-plan.md`](docs/test-plan.md) không đạt, tạo issue bằng mẫu **Test failure** (tab Issues > New issue). Ghi ID kịch bản, commit, mức độ, log. Pull request sửa lỗi ghi `Fixes #<số issue>` trong mô tả để issue tự đóng khi merge.
+
+## 5. Pull request
 
 Trước khi mở pull request, chạy:
 
