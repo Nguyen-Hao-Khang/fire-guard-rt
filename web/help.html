@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FireGuard-RT Help</title>
+  <meta name="description" content="How to read and use the FireGuard-RT monitoring panel.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%23e0492a' stroke-width='4'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23e0492a'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <script>
+    try {
+      var t = localStorage.getItem('fg.theme');
+      if (t) document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="index.html" aria-label="FireGuard-RT dashboard">
+        <svg viewBox="0 0 32 32" class="brand__mark" aria-hidden="true"><circle cx="16" cy="16" r="12.5"/><circle cx="16" cy="16" r="4"/></svg>
+        <span class="brand__name">FireGuard<span class="brand__rt">RT</span></span>
+      </a>
+      <div class="topbar__tools">
+        <a class="btn" href="index.html">Back to dashboard</a>
+        <button class="icon-btn raised" id="theme-toggle" type="button" aria-label="Switch theme"></button>
+      </div>
+    </header>
+
+    <div class="help">
+      <nav class="help__toc raised" aria-label="Contents">
+        <p class="help__toc-title">Contents</p>
+        <ol>
+          <li><a href="#start">Signing in</a></li>
+          <li><a href="#status">Reading the status</a></li>
+          <li><a href="#alarm">When an alarm goes off</a></li>
+          <li><a href="#sensors">Sensors and response</a></li>
+          <li><a href="#health">Sensor faults</a></li>
+          <li><a href="#history">History and events</a></li>
+          <li><a href="#settings">Settings</a></li>
+          <li><a href="#drill">Running a drill</a></li>
+          <li><a href="#faq">Problems and answers</a></li>
+        </ol>
+      </nav>
+
+      <main id="main" class="help__body raised" tabindex="-1">
+        <h1>Using the FireGuard-RT panel</h1>
+        <p class="help__lead">FireGuard-RT is a fire and gas alarm installed in a room or corridor. It watches light, smoke, gas and temperature, reacts on its own within a second, and reports to this panel. You use the panel to see what the device sees, look back at what happened, and adjust its settings. The device protects the room whether or not anyone has this page open.</p>
+
+        <section id="start">
+          <h2>1. Signing in</h2>
+          <p>Sign in with the same account you use on CoreIoT.</p>
+          <ul>
+            <li><b>Password.</b> Enter your CoreIoT email and password.</li>
+            <li><b>Access token.</b> Use this if you sign in to CoreIoT with Google or GitHub. On CoreIoT, open <i>Account</i>, then <i>Security</i>, press <b>Copy JWT token</b> and paste it into the panel.</li>
+          </ul>
+          <p>A token lasts about two and a half hours. The panel warns you five minutes before it runs out. To stay signed in longer, also paste the refresh token under <i>Stay signed in longer</i>; the sign-in screen explains where to find it.</p>
+          <p>After signing in, pick your device in the box at the top right. The dot next to its name tells you whether the device is talking to the panel:</p>
+          <ul class="help__legend">
+            <li><span class="help__dot" style="--c: var(--ok)"></span><b>Green.</b> The device reported recently.</li>
+            <li><span class="help__dot" style="--c: var(--warn)"></span><b>Amber.</b> No report for longer than expected. The device may be offline or without Wi-Fi.</li>
+            <li><span class="help__dot" style="--c: var(--idle)"></span><b>Grey.</b> No data yet.</li>
+          </ul>
+          <p>An offline device still detects fires and reacts on site. You just cannot see it here until it reconnects.</p>
+        </section>
+
+        <section id="status">
+          <h2>2. Reading the status</h2>
+          <p>The large ring on the <b>Overview</b> page shows the state of the device. Its colour tells you how serious things are.</p>
+          <table class="help__table">
+            <thead><tr><th scope="col">Ring</th><th scope="col">State</th><th scope="col">What it means</th></tr></thead>
+            <tbody>
+              <tr><td><span class="help__ring" style="--c: var(--idle)"></span></td><td>Starting, Warming up</td><td>The device has just been switched on. The gas sensor needs about a minute to heat up before readings are reliable.</td></tr>
+              <tr><td><span class="help__ring" style="--c: var(--ok)"></span></td><td>Normal</td><td>Everything is quiet. The device reports about once a minute.</td></tr>
+              <tr><td><span class="help__ring" style="--c: var(--warn)"></span></td><td>Pre-alarm</td><td>One sensor noticed something unusual, such as a sudden flash of light or a rise in smoke. The device waits a few seconds for a second sensor to confirm. If nothing confirms it, the device returns to Normal by itself.</td></tr>
+              <tr><td><span class="help__ring" style="--c: var(--alarm)"></span></td><td>Fire alarm</td><td>Two signs of fire agree, or the temperature passed the limit. Follow the steps in section 3.</td></tr>
+              <tr><td><span class="help__ring" style="--c: var(--alarm)"></span></td><td>Gas alarm</td><td>Gas stayed above the warning level, or passed the danger level. Follow the steps in section 3.</td></tr>
+              <tr><td><span class="help__ring" style="--c: var(--drill)"></span></td><td>Drill</td><td>A practice evacuation is running. Nothing is wrong.</td></tr>
+            </tbody>
+          </table>
+          <p>Under the ring, the small line names the reason for the last change, for example <i>Gas above danger level</i> or <i>Card override</i>. <b>Since</b> is when the device entered this state. <b>Last report</b> is how long ago the device last sent data.</p>
+          <p>During an alarm, the whole page turns a light red, the ring pulses and the browser tab title starts with the alarm name, so you notice it even from another tab.</p>
+        </section>
+
+        <section id="alarm">
+          <h2>3. When an alarm goes off</h2>
+          <div class="help__callout">
+            <p><b>People come first.</b> The panel shows what is happening, but you act at the site.</p>
+          </div>
+          <ol class="help__steps">
+            <li>Make sure everyone leaves the area. The status light on the device blinks red and green: follow the exit route your building has marked.</li>
+            <li>For a fire, call the fire service on <b>114</b> (Vietnam). For gas, do not use flames or electrical switches near the area.</li>
+            <li>If the panel shows <b>Person detected in the danger zone</b>, someone is still moving inside. Tell the rescue team when they arrive.</li>
+            <li>The device has already cut mains power to the area and started the smoke fan. Do not switch the power back on.</li>
+            <li>When the area is safe, the person responsible holds the <b>commander card</b> to the reader on the device. The alarm stops and the device returns to Normal. If the danger is still there, it raises the alarm again.</li>
+          </ol>
+          <p>You cannot silence an alarm from this panel. The device only accepts the commander card at the site, so nobody can switch off a real alarm from far away by mistake.</p>
+        </section>
+
+        <section id="sensors">
+          <h2>4. Sensors and response</h2>
+          <p>The <b>Sensors</b> panel shows the latest readings.</p>
+          <table class="help__table">
+            <thead><tr><th scope="col">Card</th><th scope="col">What it measures</th><th scope="col">Marks on the bar</th></tr></thead>
+            <tbody>
+              <tr><td>Gas</td><td>Smoke and flammable gas, as a voltage (mV). Higher means more gas.</td><td>Two marks: warning level and danger level. The bar turns amber past the first and red past the second.</td></tr>
+              <tr><td>Temperature</td><td>Air temperature in °C.</td><td>One mark: the temperature limit. Past it, the device raises a fire alarm at once.</td></tr>
+              <tr><td>Light</td><td>Brightness, as a voltage (mV). A sudden jump can mean flames.</td><td>None. The device compares the reading with the usual light level of the room.</td></tr>
+              <tr><td>Humidity</td><td>Relative humidity in %.</td><td>None. Shown for information.</td></tr>
+            </tbody>
+          </table>
+          <p>The <b>Response</b> panel lists what the device does in its current state: mains power on or cut, smoke fan speed, siren pattern and status light colour. The panel works these out from the state; it does not measure them. If the device and the panel disagree, trust what you see and hear at the site.</p>
+        </section>
+
+        <section id="health">
+          <h2>5. Sensor faults</h2>
+          <p>The <b>Sensor health</b> panel lists the five sensors. <b>OK</b> means the sensor answers and its readings make sense. <b>Fault</b> means it stopped answering or sends impossible values, for example after a loose wire.</p>
+          <p>A faulty sensor is set aside. The device keeps protecting the room with the remaining sensors, its status light blinks yellow and it chirps every 30 seconds as a reminder. On the panel, the reading of that sensor is crossed out.</p>
+          <p>Report a fault to whoever maintains the device. Most faults clear by themselves once the sensor works again; the event log records both the fault and the recovery.</p>
+        </section>
+
+        <section id="history">
+          <h2>6. History and events</h2>
+          <p>The <b>History</b> page shows how readings changed over the last hour, 24 hours or 7 days. Each point is an average, so short spikes look smaller than they were. To find out exactly when something happened, use the event log below the charts.</p>
+          <table class="help__table">
+            <thead><tr><th scope="col">Event</th><th scope="col">Recorded when</th></tr></thead>
+            <tbody>
+              <tr><td>State</td><td>The device changes state, with the reason.</td></tr>
+              <tr><td>Fault</td><td>A sensor fails or recovers.</td></tr>
+              <tr><td>Card</td><td>Someone holds a card to the reader. <i>Authorized</i> means a commander card; <i>Rejected</i> means an unknown card.</td></tr>
+              <tr><td>Presence</td><td>Movement is detected in the danger zone during an alarm, or the zone becomes clear.</td></tr>
+              <tr><td>Boot</td><td>The device starts. <i>Restarted by the watchdog</i> means it recovered from an internal error by restarting.</td></tr>
+            </tbody>
+          </table>
+          <p>Use the buttons above the table to show one kind of event. <b>Boot</b> and <b>Seq</b> number each start-up and each event, so you can tell whether anything is missing. Events that happen while the device is offline are stored on the device and appear here once it reconnects.</p>
+        </section>
+
+        <section id="settings">
+          <h2>7. Settings</h2>
+          <p>The <b>Settings</b> page changes how sensitive the device is. Leave these values alone unless a technician asks you to change them. Lower thresholds catch danger sooner but raise more false alarms.</p>
+          <table class="help__table">
+            <thead><tr><th scope="col">Setting</th><th scope="col">What it does</th><th scope="col" class="num">Default</th></tr></thead>
+            <tbody>
+              <tr><td>Sample period</td><td>How often the device reads its sensors.</td><td class="num">1000 ms</td></tr>
+              <tr><td>Call-in period</td><td>How often the device reports while everything is normal. During pre-alarm, alarm and drill it reports at every sample instead.</td><td class="num">60 s</td></tr>
+              <tr><td>Confirmation window</td><td>How long the device waits for a second sensor to confirm a first warning sign.</td><td class="num">4000 ms</td></tr>
+              <tr><td>Gas rise</td><td>How far the gas reading must climb above its usual level to count as smoke.</td><td class="num">400 mV</td></tr>
+              <tr><td>Gas warning level</td><td>Gas reading that counts as a leak if it stays there.</td><td class="num">1500 mV</td></tr>
+              <tr><td>Gas danger level</td><td>Gas reading that raises a gas alarm at once. Must be above the warning level.</td><td class="num">2500 mV</td></tr>
+              <tr><td>Light surge</td><td>How far brightness must jump above its usual level to count as flames.</td><td class="num">800 mV</td></tr>
+              <tr><td>Temperature limit</td><td>Temperature that raises a fire alarm at once.</td><td class="num">57 °C</td></tr>
+              <tr><td>Temperature rise in 10 s</td><td>How fast the temperature must climb to count as a sign of fire.</td><td class="num">3 °C</td></tr>
+            </tbody>
+          </table>
+          <p>Edit a value, then press <b>Save changes</b>. The device checks every value and answers within a few seconds: <b>Applied</b> means it uses the new value, <b>Rejected</b> means it kept the old one. The device remembers applied values after a power cut. <b>Revert</b> discards edits you have not saved.</p>
+        </section>
+
+        <section id="drill">
+          <h2>8. Running a drill</h2>
+          <ol class="help__steps">
+            <li>Tell people in the area that a drill is about to start.</li>
+            <li>On the <b>Settings</b> page, choose a duration with the slider and press <b>Start drill</b>.</li>
+            <li>The device runs the fan at half speed, plays a short repeating tone and blinks violet. Mains power stays on.</li>
+            <li>The drill ends by itself when the time is up. Press <b>Stop</b> to end it early, or hold the commander card to the reader.</li>
+          </ol>
+          <p>If a real fire or gas leak happens during a drill, the device switches to the real alarm straight away. The device must be online to receive the command.</p>
+        </section>
+
+        <section id="faq">
+          <h2>9. Problems and answers</h2>
+          <details class="help__faq">
+            <summary>The panel shows "No data" or dashes.</summary>
+            <p>The device has not reported to CoreIoT yet. Check that it has power and Wi-Fi. A newly started device needs about a minute before its first report.</p>
+          </details>
+          <details class="help__faq">
+            <summary>The dot next to the device name is amber.</summary>
+            <p>The device has not reported for longer than its call-in period. It may have lost Wi-Fi. It still protects the room; reports resume when it reconnects, including any events it stored meanwhile.</p>
+          </details>
+          <details class="help__faq">
+            <summary>"Your session has expired. Sign in again."</summary>
+            <p>Your password session or access token ran out. Sign in again. With an access token, copy a fresh one from CoreIoT first.</p>
+          </details>
+          <details class="help__faq">
+            <summary>Starting a drill says "The device is offline".</summary>
+            <p>Commands only reach a connected device. Wait for the dot to turn green and try again.</p>
+          </details>
+          <details class="help__faq">
+            <summary>A setting shows "Rejected".</summary>
+            <p>The value was outside what the device accepts, for example a danger level below the warning level. The device kept its previous value. Correct the number and save again.</p>
+          </details>
+          <details class="help__faq">
+            <summary>A setting box is red and I cannot save.</summary>
+            <p>The value under the box explains the allowed range. Bring every red box back into range, or press <b>Revert</b>.</p>
+          </details>
+          <details class="help__faq">
+            <summary>The charts are empty.</summary>
+            <p>The device sent no readings in the selected range. Pick a longer range, or check that the device is online.</p>
+          </details>
+          <details class="help__faq">
+            <summary>The page looks plain and the charts do not load.</summary>
+            <p>The panel loads its fonts and chart library from the internet. Check your connection and reload the page.</p>
+          </details>
+        </section>
+
+        <p class="help__foot">Technical documentation for developers lives in the project repository, under <code>docs/</code>.</p>
+      </main>
+    </div>
+  </div>
+  <script src="assets/help.js"></script>
+</body>
+</html>
